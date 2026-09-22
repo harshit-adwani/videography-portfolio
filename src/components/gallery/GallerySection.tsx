@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Film, Filter } from 'lucide-react';
 import { ProjectCategory, VideoProject } from '../../types';
 import { VideoCard } from './VideoCard';
-import { CinemaModal } from './CinemaModal';
+import { ANIMATION_CONFIG } from '../../config/animationConfig';
 
 interface GallerySectionProps {
   projects: VideoProject[];
+  onSelectProject: (project: VideoProject) => void;
+  isViewfinderActive?: boolean;
 }
 
 const CATEGORIES: (ProjectCategory | 'All')[] = [
@@ -17,9 +19,12 @@ const CATEGORIES: (ProjectCategory | 'All')[] = [
   'Color Grading',
 ];
 
-export const GallerySection: React.FC<GallerySectionProps> = ({ projects }) => {
+export const GallerySection: React.FC<GallerySectionProps> = ({ 
+  projects, 
+  onSelectProject,
+  isViewfinderActive = false,
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | 'All'>('All');
-  const [activeProject, setActiveProject] = useState<VideoProject | null>(null);
 
   const filteredProjects = selectedCategory === 'All'
     ? projects
@@ -28,14 +33,24 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ projects }) => {
   return (
     <section 
       id="gallery" 
-      className="relative z-20 pt-28 pb-36 px-4 sm:px-8 md:px-14 max-w-7xl mx-auto"
+      className="relative z-20 pt-28 sm:pt-24 pb-36 px-4 sm:px-8 md:px-14 max-w-7xl mx-auto"
     >
-      {/* Gallery Header Bar (Inside Camera Viewfinder Safe Area) */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 pb-6 border-b border-white/10 glass-panel p-6 sm:p-8 rounded-2xl">
+      {/* Gallery Header Bar (Cleanly docked under top HUD) */}
+      <div 
+        className={`flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-10 pb-6 border border-white/15 glass-panel-elevated p-6 sm:p-8 rounded-2xl transition-all ease-out ${
+          isViewfinderActive 
+            ? 'scale-100 opacity-100 translate-y-0 shadow-[0_0_60px_rgba(245,158,11,0.12)]' 
+            : 'scale-[0.96] opacity-0 translate-y-4'
+        }`}
+        style={{ transitionDuration: `${ANIMATION_CONFIG.gallery.headerAnimationDurationMs}ms` }}
+      >
         <div>
-          <div className="flex items-center gap-2 text-cinema-amber font-mono text-xs uppercase tracking-widest mb-2">
+          <div className="flex flex-wrap items-center gap-2 text-cinema-amber font-mono text-xs uppercase tracking-widest mb-2">
             <Film className="w-4 h-4" />
             <span>RECORDED CAMERA REELS • {filteredProjects.length} CLIPS</span>
+            <span className="px-2 py-0.5 rounded-full bg-cinema-amber/10 border border-cinema-amber/30 text-[10px] text-cinema-amber font-bold">
+              VIEWFINDER PASS-THROUGH
+            </span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-sans">
             CINEMATIC ARCHIVE
@@ -81,18 +96,11 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ projects }) => {
             <VideoCard
               key={project.id}
               project={project}
-              onClick={() => setActiveProject(project)}
+              onClick={() => onSelectProject(project)}
             />
           ))}
         </div>
       )}
-
-      {/* Expanded Cinema Modal */}
-      <CinemaModal
-        project={activeProject}
-        isOpen={Boolean(activeProject)}
-        onClose={() => setActiveProject(null)}
-      />
     </section>
   );
 };

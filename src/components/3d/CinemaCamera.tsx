@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode, Suspense, useEffect, useRef, useState } from 'react';
+import React, { Component, ErrorInfo, ReactNode, Suspense, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useTexture } from '@react-three/drei';
@@ -40,13 +40,217 @@ class ModelErrorBoundary extends Component<{ children: ReactNode; fallback: Reac
   }
 }
 
+function createCinemaScreenTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 680;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  // 1. Cinematic gradient background (atmospheric midnight blues & anamorphic horizon sweep)
+  const bgGrad = ctx.createRadialGradient(512, 340, 50, 512, 340, 500);
+  bgGrad.addColorStop(0, '#1a2744');
+  bgGrad.addColorStop(0.4, '#0f172a');
+  bgGrad.addColorStop(0.8, '#080c14');
+  bgGrad.addColorStop(1, '#030509');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 1024, 680);
+
+  // Anamorphic horizontal flare streak
+  const flareGrad = ctx.createLinearGradient(0, 340, 1024, 340);
+  flareGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+  flareGrad.addColorStop(0.3, 'rgba(56, 189, 248, 0.15)');
+  flareGrad.addColorStop(0.5, 'rgba(125, 211, 252, 0.55)');
+  flareGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.15)');
+  flareGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+  ctx.fillStyle = flareGrad;
+  ctx.fillRect(0, 335, 1024, 10);
+
+  // Subtle warm amber ground reflection
+  const warmGrad = ctx.createRadialGradient(512, 460, 20, 512, 460, 300);
+  warmGrad.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
+  warmGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = warmGrad;
+  ctx.fillRect(0, 340, 1024, 340);
+
+  // 2. 2.39:1 Anamorphic Scope Letterbox
+  const scopeHeight = 1024 / 2.39; // ~428px
+  const letterboxTop = (680 - scopeHeight) / 2; // ~126px
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+  ctx.fillRect(0, 0, 1024, letterboxTop);
+  ctx.fillRect(0, 680 - letterboxTop, 1024, letterboxTop);
+
+  // Safe frame border
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(30, letterboxTop + 10, 964, scopeHeight - 20);
+
+  // Rule of thirds grid
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 6]);
+  // Vertical lines
+  ctx.beginPath();
+  ctx.moveTo(1024 / 3, letterboxTop);
+  ctx.lineTo(1024 / 3, 680 - letterboxTop);
+  ctx.moveTo((1024 / 3) * 2, letterboxTop);
+  ctx.lineTo((1024 / 3) * 2, 680 - letterboxTop);
+  // Horizontal lines
+  ctx.moveTo(30, letterboxTop + (scopeHeight - 20) / 3);
+  ctx.lineTo(994, letterboxTop + (scopeHeight - 20) / 3);
+  ctx.moveTo(30, letterboxTop + ((scopeHeight - 20) / 3) * 2);
+  ctx.lineTo(994, letterboxTop + ((scopeHeight - 20) / 3) * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Center Crosshair
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(502, 340);
+  ctx.lineTo(522, 340);
+  ctx.moveTo(512, 330);
+  ctx.lineTo(512, 350);
+  ctx.stroke();
+
+  // 3. Monitor Telemetry Overlay
+  // Top left: REC indicator + timecode
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(60, letterboxTop + 35, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('REC', 78, letterboxTop + 43);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('01:14:28:12', 150, letterboxTop + 43);
+
+  // Top center: 4K RAW
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('VIEWFINDER 4K DCI', 410, letterboxTop + 43);
+
+  // Top right: Battery & Media
+  ctx.fillStyle = '#34d399';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('98% [BAT]', 880, letterboxTop + 43);
+
+  // Bottom left: Exposure
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('T 1.5   1/48   ISO 800   5600K', 60, 680 - letterboxTop - 25);
+
+  // Bottom right: LUT & FPS
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText('23.98 FPS • KODAK 2383', 750, 680 - letterboxTop - 25);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function createViewfinderEyepieceTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 768;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  // 1. Deep cinematic optical prism view
+  const bgGrad = ctx.createRadialGradient(384, 256, 30, 384, 256, 400);
+  bgGrad.addColorStop(0, '#1e293b');
+  bgGrad.addColorStop(0.5, '#0f172a');
+  bgGrad.addColorStop(0.85, '#090d16');
+  bgGrad.addColorStop(1, '#020408');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 768, 512);
+
+  // Anamorphic flare streak through the optical glass
+  const flareGrad = ctx.createLinearGradient(0, 256, 768, 256);
+  flareGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+  flareGrad.addColorStop(0.3, 'rgba(56, 189, 248, 0.25)');
+  flareGrad.addColorStop(0.5, 'rgba(125, 211, 252, 0.7)');
+  flareGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.25)');
+  flareGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+  ctx.fillStyle = flareGrad;
+  ctx.fillRect(0, 250, 768, 12);
+
+  // Warm golden ground reflection
+  const warmGrad = ctx.createRadialGradient(384, 380, 20, 384, 380, 260);
+  warmGrad.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+  warmGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = warmGrad;
+  ctx.fillRect(0, 256, 768, 256);
+
+  // 2. 2.39:1 Cinema Framing Lines
+  const scopeHeight = 768 / 2.39; // ~321px
+  const letterboxTop = (512 - scopeHeight) / 2; // ~95px
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(36, letterboxTop + 8, 696, scopeHeight - 16);
+
+  // 3. 9-Point Autofocus Array & Center Reticle (Canon 5D Style)
+  ctx.strokeStyle = '#ef4444';
+  ctx.fillStyle = '#ef4444';
+  ctx.lineWidth = 1.8;
+
+  // Center AF bracket
+  ctx.strokeRect(364, 236, 40, 40);
+  ctx.beginPath();
+  ctx.arc(384, 256, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Surrounding AF points
+  const afPoints = [
+    [260, 256], [508, 256], // Left, Right
+    [384, 170], [384, 342], // Top, Bottom
+    [290, 195], [478, 195], // Top-Left, Top-Right
+    [290, 317], [478, 317], // Bottom-Left, Bottom-Right
+  ];
+  ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+  afPoints.forEach(([x, y]) => {
+    ctx.strokeRect(x - 8, y - 8, 16, 16);
+  });
+
+  // 4. Optical Viewfinder Top Status Readout
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(56, letterboxTop + 24, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('REC', 68, letterboxTop + 29);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 13px monospace';
+  ctx.fillText('VIEWFINDER 4K DCI', 315, letterboxTop + 29);
+
+  // 5. Authentic Bottom Optical 7-Segment Green LCD Bar
+  ctx.fillStyle = '#10b981';
+  ctx.font = 'bold 15px monospace';
+  ctx.fillText('1/500   F 2.8   [●]   +1.3   ISO 800   ( 428 )', 140, 512 - letterboxTop - 18);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 const ExternalCameraModel: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
+  console.log('[ExternalCameraModel] Loading model and textures...');
   const { scene } = useGLTF(modelUrl);
   const [diffuseTexture, portNormal, leatherNormal] = useTexture([
     '/models/20131125021751311225.jpg',
     '/models/20131125021751312630.jpg',
     '/models/2013112502175131295.jpg',
   ]);
+  console.log('[ExternalCameraModel] Scene and textures ready! Meshes:', scene.children.length);
+
+  const screenTexture = React.useMemo(() => createCinemaScreenTexture(), []);
+  const viewfinderTexture = React.useMemo(() => createViewfinderEyepieceTexture(), []);
 
   const normalizedModel = React.useMemo(() => {
     // Configure textures
@@ -122,13 +326,26 @@ const ExternalCameraModel: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
       color: new THREE.Color(0xffffff),
     });
 
-    const rearScreenMat = new THREE.MeshStandardMaterial({
-      map: diffuseTexture,
-      roughness: 0.06,
-      metalness: 0.15,
-      emissive: new THREE.Color(0x0a1626),
-      emissiveIntensity: 0.65,
-      color: new THREE.Color(0xffffff),
+    // Illuminated rear cinema monitor
+    const liveScreenMat = new THREE.MeshStandardMaterial({
+      map: screenTexture,
+      emissiveMap: screenTexture,
+      emissive: new THREE.Color(0xffffff),
+      emissiveIntensity: 1.15,
+      roughness: 0.15,
+      metalness: 0.02,
+      side: THREE.DoubleSide,
+    });
+
+    // Illuminated optical viewfinder eyepiece portal
+    const viewfinderEyepieceMat = new THREE.MeshStandardMaterial({
+      map: viewfinderTexture,
+      emissiveMap: viewfinderTexture,
+      emissive: new THREE.Color(0xffffff),
+      emissiveIntensity: 1.25,
+      roughness: 0.1,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
     });
 
     const topScreenMat = new THREE.MeshStandardMaterial({
@@ -159,10 +376,11 @@ const ExternalCameraModel: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
       metalness: 0.7,
     });
 
+    // Realistic matte polycarbonate DSLR body casing
     const cameraBodyMat = new THREE.MeshStandardMaterial({
       map: diffuseTexture,
-      roughness: 0.38,
-      metalness: 0.16,
+      roughness: 0.68,
+      metalness: 0.03,
       color: new THREE.Color(0xffffff),
     });
 
@@ -176,11 +394,56 @@ const ExternalCameraModel: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
         mesh.receiveShadow = true;
         const name = mesh.name || '';
 
-        if (name.includes('24') || name.includes('25')) {
+        if (name.includes('09')) {
+          // Optical viewfinder eyepiece glass: Generate exact normalized UVs from vertex 3D positions
+          const geom = mesh.geometry.clone();
+          const posAttr = geom.attributes.position;
+          if (posAttr) {
+            const pos = posAttr.array as Float32Array;
+            const count = posAttr.count;
+            const newUvs = new Float32Array(count * 2);
+            // Mesh 09 bounds from camera.glb: minX = 7.726, maxX = 23.204, minY = 73.961, maxY = 83.913
+            const xMin = 7.726, xMax = 23.204;
+            const yMin = 73.961, yMax = 83.913;
+            for (let i = 0; i < count; i++) {
+              const px = pos[i * 3];
+              const py = pos[i * 3 + 1];
+              // Facing camera back: xMax is viewfinder left (u=0), xMin is viewfinder right (u=1)
+              newUvs[i * 2] = (xMax - px) / (xMax - xMin);
+              // yMin is viewfinder bottom (v=0), yMax is viewfinder top (v=1)
+              newUvs[i * 2 + 1] = (py - yMin) / (yMax - yMin);
+            }
+            geom.setAttribute('uv', new THREE.BufferAttribute(newUvs, 2));
+          }
+          mesh.geometry = geom;
+          mesh.material = viewfinderEyepieceMat;
+        } else if (name.includes('26') || name.includes('27')) {
+          // Rear LCD preview monitor: Generate exact normalized UVs from vertex 3D positions
+          const geom = mesh.geometry.clone();
+          const posAttr = geom.attributes.position;
+          if (posAttr) {
+            const pos = posAttr.array as Float32Array;
+            const count = posAttr.count;
+            const newUvs = new Float32Array(count * 2);
+            const xMin = -9.3764, xMax = 56.3058;
+            const yMin = 11.408, yMax = 64.2878;
+            for (let i = 0; i < count; i++) {
+              const px = pos[i * 3];
+              const py = pos[i * 3 + 1];
+              // Facing camera back: xMax is screen left (u=0), xMin is screen right (u=1)
+              newUvs[i * 2] = (xMax - px) / (xMax - xMin);
+              // yMin is screen bottom (v=0), yMax is screen top (v=1)
+              newUvs[i * 2 + 1] = (py - yMin) / (yMax - yMin);
+            }
+            geom.setAttribute('uv', new THREE.BufferAttribute(newUvs, 2));
+          }
+          mesh.geometry = geom;
+          mesh.material = liveScreenMat;
+        } else if (name.includes('24') || name.includes('25')) {
           // Front optical lens glass elements
           mesh.material = opticalGlassMat;
-        } else if (name.includes('09') || name.includes('16') || name.includes('05') || name.includes('27')) {
-          // Viewfinder glass, LCD screen protector glass
+        } else if (name.includes('16') || name.includes('05')) {
+          // Top status screen glass
           mesh.material = clearGlassMat;
         } else if (name.includes('10') || name.includes('02') || name.includes('03')) {
           // Hot shoe rails, strap eyelets, silver shutter button
@@ -194,9 +457,6 @@ const ExternalCameraModel: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
         } else if (name.includes('17') || name.includes('18')) {
           // Rubber side flaps and CF card door
           mesh.material = portRubberMat;
-        } else if (name.includes('26')) {
-          // Rear LCD preview monitor
-          mesh.material = rearScreenMat;
         } else if (name.includes('15')) {
           // Top LCD status readout
           mesh.material = topScreenMat;
@@ -206,8 +466,8 @@ const ExternalCameraModel: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
         } else if (name.includes('34')) {
           // Viewfinder rubber eyecup
           mesh.material = eyecupRubberMat;
-        } else if (name.includes('13') || name.includes('21') || name.includes('29') || name.includes('32')) {
-          // Dark metal dials, latches, collars
+        } else if (name.includes('13') || name.includes('29') || name.includes('32')) {
+          // Dark metal dials, latches, collars (Mesh 21 retained in cameraBodyMat for 5D badge)
           mesh.material = darkMetalMat;
         } else if (name.includes('11') || name.includes('19')) {
           // Dark chassis and mount interior
@@ -246,20 +506,6 @@ export const CinemaCamera: React.FC<CinemaCameraProps> = ({
   positionY = 0,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
-  const [hasExternalModel, setHasExternalModel] = useState(false);
-
-  useEffect(() => {
-    fetch('/models/camera.glb', { method: 'HEAD' })
-      .then((res) => {
-        const contentType = res.headers.get('content-type') || '';
-        if (res.ok && !contentType.includes('text/html')) {
-          setHasExternalModel(true);
-        } else {
-          setHasExternalModel(false);
-        }
-      })
-      .catch(() => setHasExternalModel(false));
-  }, []);
 
   // Subtle floating idle motion
   useFrame((state) => {
@@ -455,15 +701,11 @@ export const CinemaCamera: React.FC<CinemaCameraProps> = ({
       rotation={[rotationX, rotationY, 0]}
       position={[0, positionY, positionZ]}
     >
-      {hasExternalModel ? (
-        <ModelErrorBoundary fallback={proceduralCameraContent}>
-          <Suspense fallback={proceduralCameraContent}>
-            <ExternalCameraModel modelUrl="/models/camera.glb" />
-          </Suspense>
-        </ModelErrorBoundary>
-      ) : (
-        proceduralCameraContent
-      )}
+      <ModelErrorBoundary fallback={proceduralCameraContent}>
+        <Suspense fallback={proceduralCameraContent}>
+          <ExternalCameraModel modelUrl="/models/camera.glb" />
+        </Suspense>
+      </ModelErrorBoundary>
     </group>
   );
 };

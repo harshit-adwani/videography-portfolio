@@ -104,44 +104,46 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
   return (
     <div 
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 bg-black/85 backdrop-blur-2xl transition-all duration-300 animate-in fade-in"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 bg-black/85 backdrop-blur-2xl transition-all duration-300 animate-in fade-in"
     >
       {/* Modal Card (Stops propagation so clicks inside do not trigger onClose) */}
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-7xl h-[94vh] glass-panel-elevated rounded-2xl overflow-hidden border border-white/15 flex flex-col lg:flex-row shadow-2xl transition-all duration-300 animate-in zoom-in-95"
+        className="relative w-full max-w-7xl h-[92vh] sm:h-[94vh] glass-panel-elevated rounded-2xl overflow-hidden border border-white/15 flex flex-col lg:flex-row shadow-2xl transition-all duration-300 animate-in zoom-in-95"
         role="dialog"
       >
         {/* Close Button Top Right */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-30 p-2 rounded-full bg-black/60 hover:bg-white/20 text-white border border-white/10 transition-colors backdrop-blur-md"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 p-2 rounded-full bg-black/70 hover:bg-white/20 text-white border border-white/15 transition-colors backdrop-blur-md shadow-lg"
           aria-label="Close cinema player"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* --- LEFT / MAIN CINEMA PLAYER VIEWPORT --- */}
-        <div className="relative flex-1 bg-black flex flex-col justify-between overflow-hidden">
+        {/* Responsive: fixed aspect-video on mobile so it NEVER collapses; flex-1 on desktop */}
+        <div className="relative w-full aspect-video sm:aspect-video lg:aspect-auto lg:flex-1 shrink-0 lg:shrink bg-black flex flex-col justify-between overflow-hidden">
           {/* Top Bar Indicators */}
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
-            <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-cinema-amber text-obsidian-950 uppercase tracking-wider">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 flex flex-wrap items-center gap-2 max-w-[calc(100%-60px)]">
+            <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs font-mono font-bold bg-cinema-amber text-obsidian-950 uppercase tracking-wider">
               {project.category}
             </span>
-            <span className="px-2.5 py-1 rounded-md text-xs font-mono bg-black/60 backdrop-blur-md text-neutral-300 border border-white/10">
+            <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-mono bg-black/60 backdrop-blur-md text-neutral-300 border border-white/10">
               {project.aspectRatio} CINEMA
             </span>
             {project.beforeAfterGrade && (
               <button
                 onClick={() => setShowGradeSlider(!showGradeSlider)}
-                className={`px-3 py-1 rounded-md text-xs font-mono flex items-center gap-1.5 transition-colors border ${
+                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-[10px] sm:text-xs font-mono flex items-center gap-1 sm:gap-1.5 transition-colors border ${
                   showGradeSlider
                     ? 'bg-cinema-teal text-obsidian-950 border-cinema-teal font-semibold'
                     : 'bg-black/60 text-white border-white/10 hover:border-cinema-teal/60'
                 }`}
               >
-                <Sliders className="w-3.5 h-3.5" />
-                {showGradeSlider ? 'EXIT GRADE COMPARISON' : 'COMPARE RAW / GRADE'}
+                <Sliders className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden xs:inline">{showGradeSlider ? 'EXIT GRADE' : 'COMPARE RAW / GRADE'}</span>
+                <span className="xs:hidden">{showGradeSlider ? 'EXIT' : 'GRADE'}</span>
               </button>
             )}
           </div>
@@ -210,7 +212,7 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
 
           {/* Bottom Minimalist Video Controls Bar */}
           {!showGradeSlider && (
-            <div className="relative z-20 px-6 py-4 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col gap-2">
+            <div className="relative z-20 px-3 py-2 sm:px-6 sm:py-3.5 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col gap-1.5 sm:gap-2">
               {/* Scrub Timeline */}
               <div className="flex items-center gap-3">
                 <input
@@ -219,33 +221,33 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
                   max={duration || 100}
                   value={currentTime}
                   onChange={handleSeek}
-                  className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-cinema-amber"
+                  className="w-full h-1 sm:h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-cinema-amber"
                 />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between font-mono text-xs text-neutral-300">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between font-mono text-[11px] sm:text-xs text-neutral-300">
+                <div className="flex items-center gap-2.5 sm:gap-4">
                   <button
                     onClick={togglePlay}
-                    className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+                    className="p-1 sm:p-2 rounded-full hover:bg-white/10 text-white transition-colors"
                   >
-                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
+                    {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />}
                   </button>
                   <button
                     onClick={toggleMute}
-                    className="p-2 rounded-full hover:bg-white/10 text-white transition-colors"
+                    className="p-1 sm:p-2 rounded-full hover:bg-white/10 text-white transition-colors"
                   >
-                    {isMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5" />}
+                    {isMuted ? <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" /> : <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
-                  <span>
+                  <span className="text-[10px] sm:text-xs">
                     {formatTime(currentTime)} / {formatTime(duration || 0)}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 text-neutral-400">
+                <div className="flex items-center gap-2 sm:gap-3 text-neutral-400">
                   <span className="hidden sm:inline">SPACEBAR: PLAY/PAUSE</span>
-                  <span className="px-2 py-0.5 rounded bg-white/10 text-[11px] text-white">4K MASTER</span>
+                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] sm:text-[11px] text-white">4K MASTER</span>
                 </div>
               </div>
             </div>
@@ -253,7 +255,8 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
         </div>
 
         {/* --- RIGHT / LARGER DETAILED INFORMATION SIDEBAR --- */}
-        <div className="lg:w-[420px] p-6 sm:p-8 flex flex-col justify-between overflow-y-auto border-t lg:border-t-0 lg:border-l border-white/10 bg-neutral-950/70 backdrop-blur-xl">
+        {/* On mobile: fills remaining modal height with smooth vertical scrolling; on desktop: fixed 420px width */}
+        <div className="flex-1 min-h-0 lg:flex-initial lg:w-[420px] p-5 sm:p-7 md:p-8 flex flex-col justify-between overflow-y-auto border-t lg:border-t-0 lg:border-l border-white/10 bg-neutral-950/80 backdrop-blur-xl">
           <div className="space-y-6">
             {/* Title and Metadata */}
             <div className="space-y-2">

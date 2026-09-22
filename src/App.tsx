@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { storage } from './services/storage';
 import { UserProfile, VideoProject } from './types';
+import { ANIMATION_CONFIG } from './config/animationConfig';
 import { CameraCanvas } from './components/3d/CameraCanvas';
 import { ViewfinderHUD } from './components/3d/ViewfinderHUD';
 import { ViewfinderTransition } from './components/3d/ViewfinderTransition';
@@ -12,10 +13,12 @@ import { Navbar } from './components/ui/Navbar';
 import { Footer } from './components/ui/Footer';
 import { AdminLoginModal } from './components/admin/AdminLoginModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { CinemaModal } from './components/gallery/CinemaModal';
 
 export const App: React.FC = () => {
   const [profile] = useState<UserProfile>(() => storage.getProfile());
   const [projects, setProjects] = useState<VideoProject[]>(() => storage.getProjects());
+  const [activeProject, setActiveProject] = useState<VideoProject | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
@@ -36,22 +39,28 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Central breakthrough progress threshold from configuration
+  const BREAKTHROUGH_PROGRESS = ANIMATION_CONFIG.timeline.breakthroughProgress;
+  const [zoomDistance, setZoomDistance] = useState(1100);
+
   // Track global scroll smoothly
-  // Generous distance (~1300px) allows:
-  // 1. Simultaneous rotation & continuous zoom (0 - 0.45)
-  // 2. Accelerated zoom into rear preview screen (0.45 - 0.78)
-  // 3. Optical flash transition into video archive (0.78 - 1.00)
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      const zoomDistance = Math.min(1300, window.innerHeight * 1.5);
-      const progress = Math.max(0, Math.min(1, scrollY / zoomDistance));
+      const { minZoomDistance, maxZoomDistance, zoomDistanceFactor } = ANIMATION_CONFIG.timeline;
+      const distance = Math.min(maxZoomDistance, Math.max(minZoomDistance, window.innerHeight * zoomDistanceFactor));
+      setZoomDistance(distance);
+      const progress = Math.max(0, Math.min(1, scrollY / distance));
       setScrollProgress(progress);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
 
   const handleProjectsUpdated = () => {
@@ -73,18 +82,34 @@ export const App: React.FC = () => {
     setIsAdminDashboardOpen(true);
   };
 
+  // Scroll offset where the optical breakthrough completes and the gallery docks at the top
+  const transitionOffset = Math.round(zoomDistance * BREAKTHROUGH_PROGRESS);
+
   const handleScrollToGallery = () => {
-    const el = document.getElementById('gallery');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    window.scrollTo({
+      top: transitionOffset + 2,
+      behavior: 'smooth',
+    });
   };
 
-  // Gallery is active once the camera preview screen zoom completes
-  const isGalleryActive = scrollProgress >= 0.78;
+  // Gallery is active once the camera optical viewfinder zoom completes
+  const [isGalleryActive, setIsGalleryActive] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.scrollY >= 700;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (scrollProgress >= BREAKTHROUGH_PROGRESS && !isGalleryActive) {
+      setIsGalleryActive(true);
+    } else if (scrollProgress < BREAKTHROUGH_PROGRESS && isGalleryActive) {
+      setIsGalleryActive(false);
+    }
+  }, [scrollProgress, isGalleryActive]);
 
   // Background spotlight fade: light studio during camera phase, deep dark obsidian when in gallery
-  const studioBackdropOpacity = Math.max(0, 1 - scrollProgress * 1.3);
+  const studioBackdropOpacity = Math.max(0, 1 - scrollProgress * ANIMATION_CONFIG.studioBackdrop.fadeSpeed);
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-neutral-100 flex flex-col relative selection:bg-cinema-amber/30 selection:text-white">
@@ -98,7 +123,7 @@ export const App: React.FC = () => {
       />
 
       {/* --- 2. 3D CAMERA VIEWPORT (z-0) --- */}
-      {/* Continuous zoom while rotating, deep preview screen zoom, crossfades at 0.78 */}
+      {/* Continuous zoom while rotating, deep preview screen zoom, crossfades at breakthrough */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <CameraCanvas scrollProgress={scrollProgress} mousePos={mousePos} />
       </div>
@@ -124,9 +149,12 @@ export const App: React.FC = () => {
         onScrollToGallery={handleScrollToGallery}
       />
 
-      {/* --- 6. HERO SCROLL TRACK (h-[160vh]) --- */}
-      {/* Clean uninterrupted scroll distance for simultaneous rotation and preview screen zoom */}
-      <div className="relative h-[160vh] w-full pointer-events-none">
+      {/* --- 6. HERO SCROLL TRACK (Sized to match transitionOffset) --- */}
+      {/* Provides clean uninterrupted scroll distance for rotation and viewfinder zoom before the archive docks */}
+      <div 
+        className="relative w-full pointer-events-none"
+        style={{ height: `${transitionOffset}px` }}
+      >
         <HeroSection
           scrollProgress={scrollProgress}
           onScrollToGallery={handleScrollToGallery}
@@ -134,9 +162,18 @@ export const App: React.FC = () => {
       </div>
 
       {/* --- 7. CINEMATIC ARCHIVE (GALLERY) (z-10) --- */}
-      {/* Seamlessly revealed following the optical breakthrough flash! */}
-      <main className="relative z-10 flex-1 bg-gradient-to-b from-transparent via-obsidian-950 to-obsidian-950">
-        <GallerySection projects={projects} />
+      {/* Hidden during camera turn/zoom, seamlessly revealed following the optical breakthrough flash! */}
+      <main 
+        className={`relative z-10 flex-1 bg-gradient-to-b from-transparent via-obsidian-950 to-obsidian-950 transition-opacity ${
+          isGalleryActive ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{ transitionDuration: `${ANIMATION_CONFIG.gallery.mainFadeDurationMs}ms` }}
+      >
+        <GallerySection 
+          projects={projects} 
+          onSelectProject={setActiveProject} 
+          isViewfinderActive={isGalleryActive} 
+        />
       </main>
 
       {/* Footer */}
@@ -144,7 +181,7 @@ export const App: React.FC = () => {
         <Footer profile={profile} />
       </div>
 
-      {/* --- 8. POPUP DIALOGS & MODALS (z-50) --- */}
+      {/* --- 8. POPUP DIALOGS & MODALS (z-[70]) --- */}
       <ProfileModal
         profile={profile}
         isOpen={isProfileOpen}
@@ -164,6 +201,12 @@ export const App: React.FC = () => {
           setIsAdminAuthenticated(storage.isAuthenticated());
         }}
         onProjectsUpdated={handleProjectsUpdated}
+      />
+
+      <CinemaModal
+        project={activeProject}
+        isOpen={Boolean(activeProject)}
+        onClose={() => setActiveProject(null)}
       />
     </div>
   );

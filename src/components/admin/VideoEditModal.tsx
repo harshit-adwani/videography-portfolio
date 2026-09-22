@@ -121,7 +121,7 @@ export const VideoEditModal: React.FC<VideoEditModalProps> = ({
   return (
     <div 
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-xl overflow-y-auto transition-all duration-300 animate-in fade-in"
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-xl overflow-y-auto transition-all duration-300 animate-in fade-in"
     >
       <div 
         onClick={(e) => e.stopPropagation()}

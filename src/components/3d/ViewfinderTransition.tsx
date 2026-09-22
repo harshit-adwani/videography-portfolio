@@ -1,50 +1,61 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ANIMATION_CONFIG } from '../../config/animationConfig';
 
 interface ViewfinderTransitionProps {
   progress: number; // 0 to 1
 }
 
 export const ViewfinderTransition: React.FC<ViewfinderTransitionProps> = ({ progress }) => {
-  const [isFlashing, setIsFlashing] = useState(false);
-  const [flashKey, setFlashKey] = useState(0);
+  const [isBlackout, setIsBlackout] = useState(false);
+  const [transitionKey, setTransitionKey] = useState(0);
   const hasFiredRef = useRef(false);
 
-  useEffect(() => {
-    // 1. Trigger the flash once when scrolling down past the threshold (0.74)
-    if (progress >= 0.74 && !hasFiredRef.current) {
-      hasFiredRef.current = true;
-      setFlashKey((k) => k + 1); // Reset animation key
-      setIsFlashing(true);
+  const { timeline, transition } = ANIMATION_CONFIG;
 
-      // Autonomous timer: flash fades out and cleans up after 450ms, completely independent of scroll!
+  // If user loads page already scrolled past the threshold, do not trigger blackout on refresh
+  useEffect(() => {
+    if (progress >= timeline.breakthroughProgress) {
+      hasFiredRef.current = true;
+    }
+  }, [timeline.breakthroughProgress]);
+
+  useEffect(() => {
+    // 1. Trigger the black fade out right before entering the optical viewfinder
+    if (progress >= timeline.breakthroughProgress && !hasFiredRef.current) {
+      hasFiredRef.current = true;
+      setTransitionKey((k) => k + 1);
+      setIsBlackout(true);
+
+      // Autonomous timer: fade to black, peak blackout hold, then fade in from black into archive
       const timer = setTimeout(() => {
-        setIsFlashing(false);
-      }, 450);
+        setIsBlackout(false);
+      }, transition.blackoutDurationMs);
 
       return () => clearTimeout(timer);
     }
 
-    // 2. Re-arm the trigger only when the user scrolls back up past 0.50
-    if (progress < 0.50) {
+    // 2. Re-arm the transition only when the user scrolls back up past rearm threshold
+    if (progress < timeline.rearmProgress) {
       hasFiredRef.current = false;
     }
-  }, [progress]);
+  }, [progress, timeline.breakthroughProgress, timeline.rearmProgress, transition.blackoutDurationMs]);
 
-  if (!isFlashing) return null;
+  if (!isBlackout) return null;
 
   return (
-    <div 
-      key={flashKey}
-      className="fixed inset-0 pointer-events-none z-50 overflow-hidden"
-    >
-      {/* Autonomous Camera Shutter Flash (Does not follow scroll) */}
-      <div className="absolute inset-0 bg-white/95 animate-camera-flash" />
-
-      {/* Subtle warm optical strobe ring */}
+    <>
       <div 
-        className="absolute inset-0 bg-cinema-amber/20 mix-blend-screen animate-camera-flash" 
-        style={{ animationDuration: '0.35s' }}
+        key={`blackout-${transitionKey}`}
+        className="fixed inset-0 pointer-events-none z-[60] overflow-hidden bg-black animate-cinematic-blackout"
+        style={{ animationDuration: `${transition.blackoutDurationMs}ms` }}
       />
-    </div>
+      {transition.enableFlash && (
+        <div 
+          key={`flash-${transitionKey}`}
+          className="fixed inset-0 pointer-events-none z-[61] overflow-hidden bg-white animate-camera-flash"
+          style={{ animationDuration: `${transition.flashDurationMs}ms` }}
+        />
+      )}
+    </>
   );
 };

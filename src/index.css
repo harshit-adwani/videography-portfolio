@@ -81,4 +81,24 @@
   .animate-camera-flash {
     animation: cameraFlash 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  /* Cinematic Dip to Black: Fade out to black -> Peak Blackout -> Fade in from black */
+  @keyframes cinematicDipToBlack {
+    0% {
+      opacity: 0;
+    }
+    38% {
+      opacity: 1;
+    }
+    55% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .animate-cinematic-blackout {
+    animation: cinematicDipToBlack 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
 }

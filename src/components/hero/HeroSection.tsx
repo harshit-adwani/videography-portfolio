@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronDown, Eye, Film } from 'lucide-react';
+import { ANIMATION_CONFIG } from '../../config/animationConfig';
 
 interface HeroSectionProps {
   scrollProgress: number; // 0 to 1
@@ -8,13 +9,13 @@ interface HeroSectionProps {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ scrollProgress, onScrollToGallery }) => {
   // Fade side details out quickly as soon as the user starts scrolling to turn the camera
-  const sideOpacity = Math.max(0, 1 - scrollProgress * 3.5);
+  const sideOpacity = Math.max(0, 1 - scrollProgress * ANIMATION_CONFIG.heroText.fadeSpeed);
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none">
-      {/* --- LEFT SIDE: MINIMALIST DOSSIER BADGE --- */}
+      {/* --- LEFT SIDE: MINIMALIST DOSSIER BADGE (Desktop only) --- */}
       <div 
-        className="fixed left-5 sm:left-10 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3 max-w-xs transition-opacity duration-200"
+        className="hidden sm:flex fixed left-6 lg:left-10 top-1/2 -translate-y-1/2 z-20 flex-col gap-3 max-w-xs transition-opacity duration-200"
         style={{ opacity: sideOpacity }}
       >
         <div className="glass-panel p-4 rounded-2xl border border-white/10 space-y-1 pointer-events-auto backdrop-blur-xl shadow-2xl">
@@ -44,9 +45,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ scrollProgress, onScro
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: MINIMALIST SCROLL PROMPT --- */}
+      {/* --- RIGHT SIDE: MINIMALIST SCROLL PROMPT (Desktop only) --- */}
       <div 
-        className="fixed right-5 sm:right-10 top-1/2 -translate-y-1/2 z-20 flex flex-col items-end gap-3 transition-opacity duration-200"
+        className="hidden sm:flex fixed right-6 lg:right-10 top-1/2 -translate-y-1/2 z-20 flex-col items-end gap-3 transition-opacity duration-200"
         style={{ opacity: sideOpacity }}
       >
         <div className="glass-panel p-4 rounded-2xl border border-white/10 flex flex-col items-end text-right pointer-events-auto backdrop-blur-xl shadow-2xl">
@@ -67,11 +68,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ scrollProgress, onScro
         </div>
       </div>
 
-      {/* --- BOTTOM RIGHT: SKIP INTRO BUTTON --- */}
+      {/* --- MOBILE CENTERED SCROLL PROMPT --- */}
+      <div 
+        className="flex sm:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-20 flex-col items-center gap-2 transition-opacity duration-200 pointer-events-auto"
+        style={{ opacity: sideOpacity }}
+      >
+        <button
+          onClick={onScrollToGallery}
+          className="glass-panel px-4 py-2 rounded-full border border-cinema-amber/30 flex items-center gap-2 backdrop-blur-xl shadow-2xl"
+        >
+          <span className="text-[11px] font-mono text-cinema-amber font-semibold tracking-wider">
+            SCROLL TO ROTATE
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-cinema-amber animate-bounce" />
+        </button>
+      </div>
+
+      {/* --- BOTTOM: SKIP INTRO BUTTON --- */}
       <button
         onClick={onScrollToGallery}
         style={{ opacity: sideOpacity }}
-        className="fixed bottom-6 right-6 pointer-events-auto z-20 px-4 py-2 rounded-full glass-panel hover:glass-panel-elevated hover:border-cinema-amber/40 text-[11px] font-mono text-neutral-300 hover:text-white transition-all flex items-center gap-2 shadow-lg"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 pointer-events-auto z-20 px-4 py-2 rounded-full glass-panel hover:glass-panel-elevated hover:border-cinema-amber/40 text-[11px] font-mono text-neutral-300 hover:text-white transition-all flex items-center gap-2 shadow-lg whitespace-nowrap"
       >
         <Film className="w-3.5 h-3.5 text-cinema-amber" />
         <span>Skip to Archive</span>

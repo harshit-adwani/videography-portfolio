@@ -1,16 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Camera, 
   ExternalLink, 
-  Pause, 
-  Play, 
   Sliders, 
   Tag, 
-  Volume2, 
-  VolumeX, 
   X 
 } from 'lucide-react';
 import { VideoProject } from '../../types';
+import { CinemaPlayer } from './CinemaPlayer';
+import { parseVideoSource } from '../../utils/videoEmbed';
 
 interface CinemaModalProps {
   project: VideoProject | null;
@@ -19,87 +17,22 @@ interface CinemaModalProps {
 }
 
 export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClose }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [showGradeSlider, setShowGradeSlider] = useState(false);
   const [gradeSplit, setGradeSplit] = useState(50); // 0 to 100
 
-  // Reset states when opening new project
-  useEffect(() => {
-    if (isOpen && videoRef.current) {
-      setIsPlaying(true);
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {
-        setIsMuted(true);
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {});
-        }
-      });
-    }
-  }, [isOpen, project]);
-
-  // Keyboard shortcuts (Escape, Spacebar)
+  // Keyboard shortcuts (Escape)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
       if (e.key === 'Escape') onClose();
-      if (e.key === ' ') {
-        e.preventDefault();
-        togglePlay();
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isPlaying]);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !project) return null;
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      videoRef.current.play();
-      setIsPlaying(true);
-    }
-  };
-
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    setCurrentTime(time);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
-  };
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  };
+  const parsedSource = parseVideoSource(project.videoUrl);
 
   return (
     <div 
@@ -151,17 +84,12 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
           {/* Video or Color Grade Comparison View */}
           <div className="relative flex-1 w-full h-full flex items-center justify-center bg-black">
             {!showGradeSlider ? (
-              <video
-                ref={videoRef}
-                src={project.videoUrl}
-                poster={project.posterUrl}
-                playsInline
-                autoPlay
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
-                onClick={togglePlay}
-                className="w-full h-full object-contain cursor-pointer"
+              <CinemaPlayer
+                videoUrl={project.videoUrl}
+                posterUrl={project.posterUrl}
+                title={project.title}
+                aspectRatio={project.aspectRatio}
+                autoPlay={true}
               />
             ) : (
               /* Before/After Split Comparison View */
@@ -210,45 +138,28 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
             )}
           </div>
 
-          {/* Bottom Minimalist Video Controls Bar */}
+          {/* Bottom Stream Status Bar */}
           {!showGradeSlider && (
-            <div className="relative z-20 px-3 py-2 sm:px-6 sm:py-3.5 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col gap-1.5 sm:gap-2">
-              {/* Scrub Timeline */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 100}
-                  value={currentTime}
-                  onChange={handleSeek}
-                  className="w-full h-1 sm:h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-cinema-amber"
-                />
+            <div className="relative z-20 px-3 py-2 sm:px-6 sm:py-3 bg-gradient-to-t from-black via-black/90 to-transparent flex items-center justify-between font-mono text-[10px] sm:text-xs text-neutral-300 border-t border-white/5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cinema-amber animate-pulse" />
+                <span className="text-cinema-amber font-semibold uppercase">
+                  {parsedSource.type === 'youtube'
+                    ? 'YOUTUBE 4K FEED'
+                    : parsedSource.type === 'vimeo'
+                    ? 'VIMEO PRO FEED'
+                    : parsedSource.type === 'instagram'
+                    ? 'INSTAGRAM REEL FEED'
+                    : parsedSource.type === 'iframe'
+                    ? 'EMBED FEED'
+                    : 'DIRECT 4K STREAM'}
+                </span>
+                <span className="text-neutral-500">•</span>
+                <span className="text-neutral-400">{project.aspectRatio} CINEMA</span>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between font-mono text-[11px] sm:text-xs text-neutral-300">
-                <div className="flex items-center gap-2.5 sm:gap-4">
-                  <button
-                    onClick={togglePlay}
-                    className="p-1 sm:p-2 rounded-full hover:bg-white/10 text-white transition-colors"
-                  >
-                    {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />}
-                  </button>
-                  <button
-                    onClick={toggleMute}
-                    className="p-1 sm:p-2 rounded-full hover:bg-white/10 text-white transition-colors"
-                  >
-                    {isMuted ? <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" /> : <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />}
-                  </button>
-                  <span className="text-[10px] sm:text-xs">
-                    {formatTime(currentTime)} / {formatTime(duration || 0)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3 text-neutral-400">
-                  <span className="hidden sm:inline">SPACEBAR: PLAY/PAUSE</span>
-                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] sm:text-[11px] text-white">4K MASTER</span>
-                </div>
+              <div className="flex items-center gap-2 text-neutral-400">
+                <span className="hidden sm:inline">HIGH-DEFINITION PLAYBACK</span>
+                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] sm:text-[10px] text-white font-mono">DCI MASTER</span>
               </div>
             </div>
           )}

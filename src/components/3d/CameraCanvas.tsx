@@ -6,7 +6,7 @@ import { ANIMATION_CONFIG } from '../../config/animationConfig';
 
 interface CameraCanvasProps {
   scrollProgress: number; // 0 to 1
-  mousePos: { x: number; y: number };
+  mousePos?: { x: number; y: number };
 }
 
 // Canvas Error Boundary to catch any WebGL failure, context loss, or GPU issue gracefully
@@ -51,6 +51,46 @@ export const CameraCanvas: React.FC<CameraCanvasProps> = ({ scrollProgress, mous
   const p = Math.max(0, Math.min(1, scrollProgress));
   const { rotation, zoom, timeline, transition } = ANIMATION_CONFIG;
 
+  // Track responsive screen dimensions for vertical phone layouts
+  const [isMobile, setIsMobile] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 640 || window.innerHeight > window.innerWidth;
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640 || window.innerHeight > window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Internal throttled mouse parallax tracking so parent App component never re-renders on mousemove
+  const [internalMousePos, setInternalMousePos] = React.useState({ x: 0, y: 0 });
+
+  React.useEffect(() => {
+    if (isMobile || p >= timeline.breakthroughProgress) return;
+    let rafId: number | null = null;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        const x = (e.clientX / window.innerWidth) * 2 - 1;
+        const y = (e.clientY / window.innerHeight) * 2 - 1;
+        setInternalMousePos({ x, y });
+        rafId = null;
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, [isMobile, p, timeline.breakthroughProgress]);
+
+  const activeMousePos = mousePos || internalMousePos;
+
   // --- 1. CONTINUOUS ROTATION ---
   // Rotates 180° around Y so the optical viewfinder eyepiece faces the user
   const turnProgress = Math.min(1, p / rotation.turnAroundEndProgress);
@@ -60,22 +100,26 @@ export const CameraCanvas: React.FC<CameraCanvasProps> = ({ scrollProgress, mous
     : 1 - Math.pow(-2 * turnProgress + 2, 2) / 2;
   const targetRotY = rotation.initialRotY + easedTurn * (rotation.targetRotY - rotation.initialRotY);
 
-  // Mouse tilt influence dampens as we zoom in
-  const mouseInfluence = Math.max(0, 1 - p * rotation.mouseInfluenceDampenSpeed);
-  const finalRotY = targetRotY + mousePos.x * rotation.mouseXFactor * mouseInfluence;
-  const finalRotX = rotation.initialRotX - mousePos.y * rotation.mouseYFactor * mouseInfluence;
+  // Mouse tilt influence dampens as we zoom in (disabled on touch devices for performance)
+  const mouseInfluence = isMobile ? 0 : Math.max(0, 1 - p * rotation.mouseInfluenceDampenSpeed);
+  const finalRotY = targetRotY + activeMousePos.x * rotation.mouseXFactor * mouseInfluence;
+  const finalRotX = rotation.initialRotX - activeMousePos.y * rotation.mouseYFactor * mouseInfluence;
 
-  // --- 2. CONTINUOUS ZOOM ---
+  // --- 2. CONTINUOUS ZOOM & RESPONSIVE VERTICAL SIZING ---
   // Starts gently while turning, and accelerates straight into the optical viewfinder window
   const zoomFactor = Math.min(1, p / timeline.breakthroughProgress);
   const posZ = Math.pow(zoomFactor, zoom.posZExponent) * zoom.posZMultiplier;
 
-  // Scale: starts at initialScale and smoothly expands to initialScale + scaleMultiplier
-  const scale = zoom.initialScale + Math.pow(zoomFactor, zoom.scaleExponent) * zoom.scaleMultiplier;
+  // Use calibrated mobile scale so the full camera rig, handles, and matte box fit vertically on phones
+  const baseScale = isMobile ? zoom.mobileInitialScale : zoom.initialScale;
+  const scaleMult = isMobile ? zoom.mobileScaleMultiplier : zoom.scaleMultiplier;
+  const cameraZ = isMobile ? zoom.mobileCameraPositionZ : zoom.cameraPositionZ;
+  const scale = baseScale + Math.pow(zoomFactor, zoom.scaleExponent) * scaleMult;
 
   // --- 3. CINEMATIC BLACKOUT SYNCHRONIZED DISAPPEARANCE ---
   // Camera stays visible during the zoom into the viewfinder window, and cleanly vanishes behind the black fade
-  const canvasOpacity = p < timeline.breakthroughProgress ? 1 : 0;
+  const isCanvasVisible = p < timeline.breakthroughProgress;
+  const canvasOpacity = isCanvasVisible ? 1 : 0;
 
   // Precise mathematical centering for the Optical Viewfinder:
   // Fine-tuned to place the optical viewfinder eyepiece at exact 50% horizontal and 50% vertical dead-center
@@ -87,18 +131,25 @@ export const CameraCanvas: React.FC<CameraCanvasProps> = ({ scrollProgress, mous
       className="w-full h-full relative pointer-events-none transition-opacity"
       style={{ 
         opacity: canvasOpacity, 
+        display: isCanvasVisible ? 'block' : 'none',
         transitionDuration: `${transition.cameraFadeDurationMs}ms` 
       }}
     >
       <CanvasErrorBoundary>
         <Canvas
+          frameloop={isCanvasVisible ? 'always' : 'demand'}
           camera={{ 
-            position: [0, 0, zoom.cameraPositionZ], 
-            fov: zoom.cameraFov, 
+            position: [0, 0, cameraZ], 
+            fov: isMobile ? 42 : zoom.cameraFov, 
             near: zoom.cameraNear 
           }}
           className="w-full h-full"
-          gl={{ antialias: true, alpha: true }}
+          dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, isMobile ? 1.25 : 2)]}
+          gl={{ 
+            antialias: !isMobile, 
+            alpha: true, 
+            powerPreference: 'high-performance' 
+          }}
         >
           <Suspense fallback={null}>
             {/* Balanced Studio Lighting for authentic camera matte finish */}
@@ -110,7 +161,7 @@ export const CameraCanvas: React.FC<CameraCanvasProps> = ({ scrollProgress, mous
               position={[3.5, 4.5, 4.5]}
               intensity={1.3}
               color="#ffffff"
-              castShadow
+              castShadow={!isMobile}
             />
 
             {/* Fill Light from left: soft neutral fill */}
@@ -135,8 +186,12 @@ export const CameraCanvas: React.FC<CameraCanvasProps> = ({ scrollProgress, mous
               distance={6}
             />
 
-            {/* Floating Camera Rig */}
-            <Float speed={p > 0.25 ? 0 : 1.2} rotationIntensity={0.06} floatIntensity={0.12}>
+            {/* Floating Camera Rig (paused on mobile scroll for maximum touch performance) */}
+            <Float 
+              speed={p > 0.25 || isMobile ? 0 : 1.2} 
+              rotationIntensity={isMobile ? 0 : 0.06} 
+              floatIntensity={isMobile ? 0 : 0.12}
+            >
               <group position={[screenOffsetX, -0.05 + screenOffsetY, 0]} scale={scale}>
                 <CinemaCamera
                   rotationY={finalRotY}
@@ -148,13 +203,15 @@ export const CameraCanvas: React.FC<CameraCanvasProps> = ({ scrollProgress, mous
               </group>
             </Float>
 
-            {/* Floor Shadow */}
+            {/* Floor Shadow (optimized frames on mobile) */}
             <ContactShadows
               position={[0, -1.8, 0]}
               opacity={Math.max(0, 0.45 * (1 - p * 1.5))}
               scale={7}
               blur={2.5}
               far={4}
+              resolution={isMobile ? 256 : 512}
+              frames={isMobile ? 1 : Infinity}
               color="#000000"
             />
           </Suspense>

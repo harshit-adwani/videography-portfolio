@@ -40,7 +40,7 @@ export const ViewfinderTransition: React.FC<ViewfinderTransitionProps> = ({ prog
     }
   }, [progress, timeline.breakthroughProgress, timeline.rearmProgress, transition.blackoutDurationMs]);
 
-  if (!isBlackout) return null;
+  if (!isBlackout || transition.blackoutDurationMs <= 0) return null;
 
   return (
     <>

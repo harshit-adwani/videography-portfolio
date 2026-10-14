@@ -1,44 +1,39 @@
 import { UserProfile, VideoProject } from '../types';
 
 export const initialProfile: UserProfile = {
-  name: "ALEXANDER VANCE",
-  title: "Cinematographer & Lead Editor",
-  tagline: "Sculpting light, rhythm, and emotion into timeless visual narratives.",
-  bio: "Specializing in high-end commercial cinema, narrative music videos, and dynamic fashion reels. Bridging technical mastery with visceral storytelling across an 8-year journey of capturing frames across 14 countries.",
-  location: "Los Angeles / Worldwide",
-  avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+  name: "HARSHIT ADWANI",
+  title: "Visual Artist",
+  tagline: "Find what you love and let it kill you",
+  bio: "19 year old visual artist based in jaipur working with Cameras and Editing Softwares to create visual experiences, Covering events, quick deliverables and a pinch of creativity",
+  location: "Jaipur",
+  avatarUrl: "",
   equipment: [
     {
-      category: "Camera Bodies",
-      items: ["RED V-Raptor 8K VV", "Sony FX6 Cinema Line", "Blackmagic Cinema 6K Full Frame"]
+      category: "Camera Bodies & Capture",
+      items: ["Sony ZV-E10", "iPhone 15 Pro (ProRes Log)"]
     },
     {
-      category: "Glass & Optics",
-      items: ["Cooke Anamorphic /i Full Frame Plus", "Atlas Orion Silver Anamorphic Set", "Canon K35 Vintage Primes"]
+      category: "Glass & Mobile Rig",
+      items: ["Sony E-Mount Lenses", "Gimbal & Handheld Rig"]
     },
     {
-      category: "Support & Aerial",
-      items: ["DJI Inspire 3 (X9-8K Air)", "DJI Ronin 2 Professional Gimbal", "EasyRig Vario 5 with Cinema Gimbal Rig"]
+      category: "Focus & Delivery",
+      items: ["Event Coverage", "Quick Deliverables & Creative Edits"]
     }
   ],
   software: [
-    "DaVinci Resolve Studio (Advanced Color Grading)",
-    "Adobe Premiere Pro (Offline Narrative Cuts)",
-    "Adobe After Effects (VFX & Motion Graphics)",
-    "Remotion (Programmatic Motion Video Code)"
+    "Adobe Premiere Pro",
+    "Adobe After Effects"
   ],
   socials: [
-    { platform: "Vimeo", url: "https://vimeo.com", handle: "vimeo.com/alexvance" },
-    { platform: "YouTube", url: "https://youtube.com", handle: "youtube.com/@alexvancecinema" },
-    { platform: "Instagram", url: "https://instagram.com", handle: "@alexvance.cine" },
-    { platform: "Behance", url: "https://behance.net", handle: "behance.net/alexvance" }
+    { platform: "Instagram", url: "https://instagram.com/topper.mp4", handle: "@topper.mp4" }
   ],
-  email: "alex@vancecinema.com",
+  email: "harshitadwani2007@gmail.com",
   stats: [
-    { label: "Commercials Directed", value: "48+" },
-    { label: "Global Festival Selections", value: "12" },
-    { label: "Total Views Delivered", value: "35M+" },
-    { label: "Years Behind the Lens", value: "8" }
+    { label: "Age", value: "19" },
+    { label: "Based In", value: "Jaipur" },
+    { label: "Creative Focus", value: "Events & Reels" },
+    { label: "Workflow", value: "Fast Turnaround" }
   ]
 };
 

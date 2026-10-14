@@ -1,0 +1,36 @@
+{
+  "name": "HARSHIT ADWANI",
+  "title": "Visual Artist",
+  "tagline": "Find what you love and let it kill you",
+  "bio": "19 year old visual artist based in jaipur working with Cameras and Editing Softwares to create visual experiences, Covering events, quick deliverables and a pinch of creativity",
+  "location": "Jaipur",
+  "avatarUrl": "",
+  "equipment": [
+    {
+      "category": "Camera Bodies & Capture",
+      "items": ["Sony ZV-E10", "iPhone 15 Pro (ProRes Log)"]
+    },
+    {
+      "category": "Glass & Mobile Rig",
+      "items": ["Sony E-Mount Lenses", "Gimbal & Handheld Rig"]
+    },
+    {
+      "category": "Focus & Delivery",
+      "items": ["Event Coverage", "Quick Deliverables & Creative Edits"]
+    }
+  ],
+  "software": [
+    "Adobe Premiere Pro",
+    "Adobe After Effects"
+  ],
+  "socials": [
+    { "platform": "Instagram", "url": "https://instagram.com/topper.mp4", "handle": "@topper.mp4" }
+  ],
+  "email": "harshitadwani2007@gmail.com",
+  "stats": [
+    { "label": "Age", "value": "19" },
+    { "label": "Based In", "value": "Jaipur" },
+    { "label": "Creative Focus", "value": "Events & Reels" },
+    { "label": "Workflow", "value": "Fast Turnaround" }
+  ]
+}

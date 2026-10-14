@@ -104,16 +104,35 @@ export const ANIMATION_CONFIG = {
   // ----------------------------------------------------------------------------
   zoom: {
     /** 
-     * Initial camera scale at hero landing.
-     * Default: 0.85
+     * Initial camera scale at hero landing on desktop.
+     * Default: 0.75
      */
     initialScale: 0.75,
 
     /** 
-     * Maximum scale expansion as camera zooms into the optical viewfinder.
-     * Default: 1.25 (expands up to initialScale + scaleMultiplier = 2.10)
+     * Initial camera scale at hero landing on vertical mobile phones.
+     * Keeps the entire cinema rig, handles, and matte box fully visible within narrow portrait screens.
+     * Default: 0.48
+     */
+    mobileInitialScale: 0.48,
+
+    /** 
+     * Maximum scale expansion as camera zooms into the optical viewfinder (desktop).
+     * Default: 1.25
      */
     scaleMultiplier: 1.25,
+
+    /** 
+     * Maximum scale expansion as camera zooms into the optical viewfinder (mobile).
+     * Default: 1.35
+     */
+    mobileScaleMultiplier: 1.35,
+
+    /** 
+     * Camera position Z on mobile screens to maintain comfortable vertical clearance.
+     * Default: 4.8
+     */
+    mobileCameraPositionZ: 4.8,
 
     /** 
      * Exponent for scale easing (higher = stays smaller longer, then accelerates into viewfinder).
@@ -250,6 +269,33 @@ export const ANIMATION_CONFIG = {
      * Default: 700
      */
     headerAnimationDurationMs: 700,
+  },
+
+  // ----------------------------------------------------------------------------
+  // 7. SCROLL HARD STOP & GATE (Intro Card Screen)
+  // ----------------------------------------------------------------------------
+  gate: {
+    /** 
+     * Whether the scroll hard stop is enabled at the intro card screen.
+     * When true, zooming into the viewfinder halts at the intro screen,
+     * requiring a pause and new scroll gesture to proceed to the gallery.
+     * Default: true
+     */
+    enabled: true,
+
+    /** 
+     * Idle silence duration in ms required to confirm the entry scroll inertia
+     * has completely stopped before arming the gate for the next scroll gesture.
+     * Default: 140
+     */
+    cooldownMs: 140,
+
+    /** 
+     * Maximum ceiling duration in ms that the hard stop can hold while events
+     * are continuously firing, ensuring a continuous scroller is never trapped.
+     * Default: 600
+     */
+    maxLockDurationMs: 600,
   },
 } as const;
 

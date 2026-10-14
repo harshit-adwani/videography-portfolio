@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Clapperboard, Globe, Mail, MapPin, X } from 'lucide-react';
+import { Camera, Clapperboard, Globe, Mail, MapPin, User, X } from 'lucide-react';
 import { UserProfile } from '../../types';
 
 interface ProfileModalProps {
@@ -27,7 +27,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onC
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-cinema-amber" />
             <span className="font-mono text-xs text-neutral-400 uppercase tracking-wider">
-              DIRECTOR / EDITOR DOSSIER
+              ARTIST / CREATIVE DOSSIER
             </span>
           </div>
           <button
@@ -43,12 +43,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onC
         <div className="p-5 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1 min-h-0">
           {/* Bio & Intro Section */}
           <div className="flex flex-col sm:flex-row gap-6 items-start">
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-cinema-amber/40 shrink-0 shadow-lg shadow-black">
-              <img
-                src={profile.avatarUrl}
-                alt={profile.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-cinema-amber/40 shrink-0 shadow-lg shadow-black bg-neutral-900 flex items-center justify-center">
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-neutral-900 flex flex-col items-center justify-center text-neutral-400">
+                  <User className="w-10 h-10 text-cinema-amber/80" />
+                  <span className="text-[9px] font-mono text-neutral-500 mt-1 uppercase tracking-wider">Artist</span>
+                </div>
+              )}
             </div>
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-3">

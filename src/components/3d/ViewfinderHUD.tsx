@@ -5,12 +5,13 @@ import { ANIMATION_CONFIG } from '../../config/animationConfig';
 interface ViewfinderHUDProps {
   progress: number; // 0 to 1
   isGalleryActive?: boolean;
+  onOpenAdmin?: () => void;
 }
 
-export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ progress, isGalleryActive = false }) => {
+// Isolated LiveTimecode component prevents thrashing parent HUD re-renders at 24 FPS
+const LiveTimecode: React.FC = () => {
   const [timecode, setTimecode] = useState("01:14:28:12");
 
-  // Live timecode counter simulation (24 FPS)
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -22,6 +23,15 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ progress, isGaller
     }, 1000 / 24);
     return () => clearInterval(interval);
   }, []);
+
+  return <span>{timecode}</span>;
+};
+
+export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = React.memo(({ 
+  progress, 
+  isGalleryActive = false,
+  onOpenAdmin,
+}) => {
 
   // Opacity:
   // Dynamically computed based on ANIMATION_CONFIG.hud
@@ -67,7 +77,7 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ progress, isGaller
         }`}>
           <span className="w-2 h-2 rounded-full bg-red-500 animate-rec-blink" />
           <span className="text-red-500 font-bold tracking-wider text-[9px]">REC</span>
-          <span className="text-white font-mono tracking-wider font-semibold text-[10px]">{timecode}</span>
+          <span className="text-white font-mono tracking-wider font-semibold text-[10px]"><LiveTimecode /></span>
         </div>
 
         {/* Desktop / Tablet: Centered cinema telemetry ribbon with plenty of room on both sides */}
@@ -76,7 +86,7 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ progress, isGaller
           <div className="flex items-center gap-2 text-red-500 font-bold tracking-wider">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-rec-blink" />
             <span>{isGalleryActive ? 'PLAYBACK' : 'REC'}</span>
-            <span className="text-white tracking-widest font-semibold ml-1">{timecode}</span>
+            <span className="text-white tracking-widest font-semibold ml-1"><LiveTimecode /></span>
           </div>
 
           <div className="h-3.5 w-[1px] bg-white/15" />
@@ -157,16 +167,28 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ progress, isGaller
         </div>
 
         {/* Right: Camera Roll Status */}
-        <div className="bg-black/80 px-3.5 sm:px-4 py-1.5 rounded-xl border border-cinema-amber/30 backdrop-blur-xl shadow-xl text-right text-xs">
-          <div className="text-[10px] text-cinema-amber uppercase tracking-wider font-semibold flex items-center justify-end gap-1.5">
-            <Eye className="w-3 h-3" />
-            <span>RECORDED REEL</span>
+        <div className="bg-black/80 px-3.5 sm:px-4 py-1.5 rounded-xl border border-cinema-amber/30 backdrop-blur-xl shadow-xl text-right text-xs flex items-center gap-2.5">
+          <div>
+            <div className="text-[10px] text-cinema-amber uppercase tracking-wider font-semibold flex items-center justify-end gap-1.5">
+              <Eye className="w-3 h-3" />
+              <span>RECORDED REEL</span>
+            </div>
+            <div className="text-white text-xs font-mono">
+              {isGalleryActive ? 'ARCHIVE REEL ACTIVE' : 'LOCKING VIEWFINDER...'}
+            </div>
           </div>
-          <div className="text-white text-xs font-mono">
-            {isGalleryActive ? 'ARCHIVE REEL ACTIVE' : 'LOCKING VIEWFINDER...'}
-          </div>
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="pointer-events-auto opacity-20 hover:opacity-100 transition-opacity p-1 text-neutral-500 hover:text-cinema-amber flex items-center gap-1 text-[9px] border-l border-white/10 pl-2"
+              title="Director Console"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-600 block hover:bg-cinema-amber" />
+              <span className="hidden sm:inline">CORE</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
-};
+});

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from './services/api';
 import { UserProfile, VideoProject } from './types';
+import { initialProjects } from './data/initialProjects';
 import { ANIMATION_CONFIG } from './config/animationConfig';
 import { CameraCanvas } from './components/3d/CameraCanvas';
 import { ViewfinderHUD } from './components/3d/ViewfinderHUD';
@@ -54,7 +55,7 @@ export const App: React.FC = () => {
     ]
   }));
 
-  const [projects, setProjects] = useState<VideoProject[]>([]);
+  const [projects, setProjects] = useState<VideoProject[]>(() => initialProjects);
   const [activeProject, setActiveProject] = useState<VideoProject | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);

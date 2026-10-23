@@ -35,7 +35,11 @@ lerna-debug.log*
 # Temporary / Scratch files
 *.tmp
 *.temp
-screenshot*.png
+/screenshot*.png
 public/models/screen_preview.jpg
 .edge_profile/
 dump.html
+
+# User uploaded video files (GitHub limit is 100MB)
+public/uploads/videos/*
+!public/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4

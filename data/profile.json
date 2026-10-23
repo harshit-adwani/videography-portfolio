@@ -32,5 +32,6 @@
     { "label": "Based In", "value": "Jaipur" },
     { "label": "Creative Focus", "value": "Events & Reels" },
     { "label": "Workflow", "value": "Fast Turnaround" }
-  ]
+  ],
+  "showBrandsAndLogos": true
 }

@@ -17,7 +17,7 @@
     "videoUrl": "https://youtube.com/shorts/dWv07VWOYTg?si=6QKeqhxViwVv-Jzb",
     "previewUrl": "https://youtube.com/shorts/dWv07VWOYTg?si=6QKeqhxViwVv-Jzb",
     "posterUrl": "https://img.youtube.com/vi/dWv07VWOYTg/maxresdefault.jpg",
-    "description": "Cinematic reel embedded via YouTube 4K feed.",
+    "description": "High-intensity vertical commercial reel shot courtside at the Picklefest tournament in Ajmer. Fast-paced rally cuts, dynamic paddle action, and hype sound design.",
     "links": [
       {
         "label": "Watch on YouTube",
@@ -28,6 +28,116 @@
     "isPublished": true,
     "order": 1,
     "createdAt": "2026-10-14"
+  },
+  {
+    "id": "proj-1792740403122",
+    "title": "Campus Edit",
+    "slug": "campus-edit",
+    "category": "Commercial",
+    "client": "",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "9:16",
+    "roles": [
+      "Director",
+      "Editor"
+    ],
+    "cameraGear": "SONY ZVE10",
+    "editingSoftware": "Adobe Premiere Pro",
+    "videoUrl": "/uploads/videos/campus_edit_intro_2-1792740387609-544.mp4",
+    "previewUrl": "/uploads/videos/campus_edit_intro_2-1792740387609-544.mp4",
+    "posterUrl": "/uploads/posters/screenshot_2026-10-23_125521-1792740401364-9077.png",
+    "description": "",
+    "links": [],
+    "featured": false,
+    "isPublished": true,
+    "order": 2,
+    "createdAt": "2026-10-23"
+  },
+  {
+    "id": "proj-1792000278502",
+    "title": "Picklefest Ad 2",
+    "slug": "picklefest-ad-2",
+    "category": "Commercial",
+    "client": "Picklefest",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "9:16",
+    "roles": [
+      "Director",
+      "Editor"
+    ],
+    "cameraGear": "Sony ZV-E10 / Cinema Rig",
+    "editingSoftware": "Premiere Pro & After Effects",
+    "videoUrl": "https://youtu.be/Gw2_lWmVKXo",
+    "previewUrl": "https://youtu.be/Gw2_lWmVKXo",
+    "posterUrl": "https://img.youtube.com/vi/Gw2_lWmVKXo/maxresdefault.jpg",
+    "description": "Official tournament promo reel and commercial ad for Picklefest. Emphasizing player intensity, championship atmosphere, and courtside energy.",
+    "links": [
+      {
+        "label": "Watch on YouTube",
+        "url": "https://youtu.be/Gw2_lWmVKXo"
+      }
+    ],
+    "featured": false,
+    "isPublished": false,
+    "order": 3,
+    "createdAt": "2026-10-14"
+  },
+  {
+    "id": "proj-1790441388608",
+    "title": "JECRC Campus Collab",
+    "slug": "jecrc-campus-collab",
+    "category": "Social Reel",
+    "client": "Socialz",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "16:9",
+    "roles": [
+      "Director",
+      "Editor"
+    ],
+    "cameraGear": "Sony FX6 + Cine Primes",
+    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
+    "videoUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
+    "previewUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
+    "posterUrl": "/uploads/posters/screenshot_2026-09-21_211239-1790441385233-7949.png",
+    "description": "The clips are shot by me and somil and entire video was edited by me",
+    "links": [
+      {
+        "label": "Watch 4K Release",
+        "url": "https://vimeo.com"
+      }
+    ],
+    "featured": false,
+    "isPublished": true,
+    "order": 4,
+    "createdAt": "2026-09-26"
+  },
+  {
+    "id": "proj-1792740096757",
+    "title": "Picklefest AD 3",
+    "slug": "picklefest-ad-3",
+    "category": "Commercial",
+    "client": "Picklefest",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "16:9",
+    "roles": [
+      "Director",
+      "Editor"
+    ],
+    "cameraGear": "SONY ZVE10",
+    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
+    "videoUrl": "/uploads/videos/sequence_01_1-1792740076162-4908.mp4",
+    "previewUrl": "/uploads/videos/sequence_01_1-1792740076162-4908.mp4",
+    "posterUrl": "/uploads/posters/whatsapp_image_2026-10-23_at_12_52_55_pm-1792740216570-5042.jpeg",
+    "description": "",
+    "links": [],
+    "featured": false,
+    "isPublished": true,
+    "order": 5,
+    "createdAt": "2026-10-23"
   },
   {
     "id": "proj-1791997502071",
@@ -56,66 +166,7 @@
     ],
     "featured": false,
     "isPublished": true,
-    "order": 2,
+    "order": 6,
     "createdAt": "2026-10-14"
-  },
-  {
-    "id": "proj-1792000278502",
-    "title": "Picklefest Ad 2",
-    "slug": "picklefest-ad-2",
-    "category": "Commercial",
-    "client": "Picklefest",
-    "year": "2026",
-    "runtime": "01:30",
-    "aspectRatio": "9:16",
-    "roles": [
-      "Director"
-    ],
-    "cameraGear": "Sony ZV-E10 / Cinema Rig",
-    "editingSoftware": "Premiere Pro & After Effects",
-    "videoUrl": "https://youtu.be/Gw2_lWmVKXo",
-    "previewUrl": "https://youtu.be/Gw2_lWmVKXo",
-    "posterUrl": "https://img.youtube.com/vi/Gw2_lWmVKXo/maxresdefault.jpg",
-    "description": "Cinematic reel embedded via YouTube 4K feed.",
-    "links": [
-      {
-        "label": "Watch on YouTube",
-        "url": "https://youtu.be/Gw2_lWmVKXo"
-      }
-    ],
-    "featured": false,
-    "isPublished": true,
-    "order": 3,
-    "createdAt": "2026-10-14"
-  },
-  {
-    "id": "proj-1790441388608",
-    "title": "JECRC SOCIALZ CAMPUS",
-    "slug": "jecrc-socialz-campus",
-    "category": "Commercial",
-    "client": "",
-    "year": "2026",
-    "runtime": "01:30",
-    "aspectRatio": "16:9",
-    "roles": [
-      "Director",
-      "Editor"
-    ],
-    "cameraGear": "Sony FX6 + Cine Primes",
-    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
-    "videoUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
-    "previewUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
-    "posterUrl": "/uploads/posters/screenshot_2026-09-21_211239-1790441385233-7949.png",
-    "description": "",
-    "links": [
-      {
-        "label": "Watch 4K Release",
-        "url": "https://vimeo.com"
-      }
-    ],
-    "featured": false,
-    "isPublished": true,
-    "order": 4,
-    "createdAt": "2026-09-26"
   }
 ]

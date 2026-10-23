@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Film, Filter } from 'lucide-react';
 import { ProjectCategory, VideoProject } from '../../types';
 import { VideoCard } from './VideoCard';
+import { PicklefestShowcase } from './PicklefestShowcase';
+import { BrandsSection } from './BrandsSection';
 import { ANIMATION_CONFIG } from '../../config/animationConfig';
 
 interface GallerySectionProps {
   projects: VideoProject[];
   onSelectProject: (project: VideoProject) => void;
   isViewfinderActive?: boolean;
+  showBrandsAndLogos?: boolean;
 }
 
 const CATEGORIES: (ProjectCategory | 'All')[] = [
@@ -23,6 +26,7 @@ export const GallerySection: React.FC<GallerySectionProps> = React.memo(({
   projects, 
   onSelectProject,
   isViewfinderActive = false,
+  showBrandsAndLogos = true,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | 'All'>('All');
 
@@ -100,6 +104,20 @@ export const GallerySection: React.FC<GallerySectionProps> = React.memo(({
             />
           ))}
         </div>
+      )}
+
+      {/* --- RECENT BRANDS & LOGOS SECTIONS (CONTROLLED VIA ADMIN TOGGLE) --- */}
+      {showBrandsAndLogos && (
+        <>
+          {/* --- ACT 3.1: DEDICATED PICKLEFEST TOURNAMENT SHOWCASE --- */}
+          <PicklefestShowcase
+            projects={projects}
+            onSelectProject={onSelectProject}
+          />
+
+          {/* --- ACT 3.2: BRANDS & CREATORS PORTFOLIO SECTION --- */}
+          <BrandsSection />
+        </>
       )}
     </section>
   );

@@ -34,7 +34,8 @@ export const initialProfile: UserProfile = {
     { label: "Based In", value: "Jaipur" },
     { label: "Creative Focus", value: "Events & Reels" },
     { label: "Workflow", value: "Fast Turnaround" }
-  ]
+  ],
+  showBrandsAndLogos: true
 };
 
 // High-quality projects and reels
@@ -54,7 +55,7 @@ export const initialProjects: VideoProject[] = [
     videoUrl: "https://youtube.com/shorts/dWv07VWOYTg?si=6QKeqhxViwVv-Jzb",
     previewUrl: "https://youtube.com/shorts/dWv07VWOYTg?si=6QKeqhxViwVv-Jzb",
     posterUrl: "https://img.youtube.com/vi/dWv07VWOYTg/maxresdefault.jpg",
-    description: "Cinematic reel embedded via YouTube 4K feed.",
+    description: "High-intensity vertical commercial reel shot courtside at the Picklefest tournament in Ajmer. Fast-paced rally cuts, dynamic paddle action, and hype sound design.",
     links: [
       {
         label: "Watch on YouTube",
@@ -102,13 +103,13 @@ export const initialProjects: VideoProject[] = [
     year: "2026",
     runtime: "01:30",
     aspectRatio: "9:16",
-    roles: ["Director"],
+    roles: ["Director", "Editor"],
     cameraGear: "Sony ZV-E10 / Cinema Rig",
     editingSoftware: "Premiere Pro & After Effects",
     videoUrl: "https://youtu.be/Gw2_lWmVKXo",
     previewUrl: "https://youtu.be/Gw2_lWmVKXo",
     posterUrl: "https://img.youtube.com/vi/Gw2_lWmVKXo/maxresdefault.jpg",
-    description: "Cinematic reel embedded via YouTube 4K feed.",
+    description: "Official tournament promo reel and commercial ad for Picklefest. Emphasizing player intensity, championship atmosphere, and courtside energy.",
     links: [
       {
         label: "Watch on YouTube",

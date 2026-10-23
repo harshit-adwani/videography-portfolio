@@ -10,8 +10,22 @@ export default function handler(req, res) {
     return res.status(200).end();
   }
 
+  const filePath = path.join(process.cwd(), 'data', 'profile.json');
+
+  if (req.method === 'POST') {
+    try {
+      if (req.body) {
+        try {
+          fs.writeFileSync(filePath, JSON.stringify(req.body, null, 2), 'utf-8');
+        } catch (_) {}
+        return res.status(200).json(req.body);
+      }
+    } catch (err) {
+      console.error('Error handling profile POST:', err);
+    }
+  }
+
   try {
-    const filePath = path.join(process.cwd(), 'data', 'profile.json');
     if (fs.existsSync(filePath)) {
       const data = fs.readFileSync(filePath, 'utf-8');
       return res.status(200).json(JSON.parse(data));

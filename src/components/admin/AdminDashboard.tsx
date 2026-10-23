@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   ArrowDown, 
   ArrowUp, 
+  Building2,
   Check, 
   Eye, 
   EyeOff, 
@@ -30,6 +31,7 @@ interface AdminDashboardProps {
   onClose: () => void;
   onProjectsUpdated: () => void;
   onProfileUpdated?: (profile: UserProfile) => void;
+  profile?: UserProfile;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -37,6 +39,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onClose,
   onProjectsUpdated,
   onProfileUpdated,
+  profile: initialProfileProp,
 }) => {
   const [activeTab, setActiveTab] = useState<'projects' | 'profile'>('projects');
   const [projects, setProjects] = useState<VideoProject[]>([]);
@@ -47,9 +50,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [passMessage, setPassMessage] = useState('');
 
   // Profile Form State
-  const [profile, setProfile] = useState<UserProfile>(() => storage.getProfile());
+  const [profile, setProfile] = useState<UserProfile>(() => initialProfileProp || storage.getProfile());
   const [profileSavedMsg, setProfileSavedMsg] = useState('');
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+
+  useEffect(() => {
+    if (initialProfileProp) {
+      setProfile(initialProfileProp);
+    }
+  }, [initialProfileProp]);
+
+  const isBrandsEnabled = profile.showBrandsAndLogos !== false;
+
+  const handleToggleBrandsAndLogos = async (enabled: boolean) => {
+    const updatedProfile: UserProfile = {
+      ...profile,
+      showBrandsAndLogos: enabled,
+    };
+    setProfile(updatedProfile);
+    storage.saveProfile(updatedProfile);
+    const saved = await api.saveProfile(updatedProfile);
+    if (onProfileUpdated) {
+      onProfileUpdated(saved || updatedProfile);
+    }
+    setProfileSavedMsg(
+      enabled
+        ? '✓ Brands & tournament showcase enabled on website!'
+        : '✓ Brands & tournament showcase disabled — website returned to previous layout.'
+    );
+    setTimeout(() => setProfileSavedMsg(''), 4000);
+  };
 
   // Quick Media Connect State (YouTube + Instagram)
   const [connectProvider, setConnectProvider] = useState<'youtube' | 'instagram'>('youtube');
@@ -328,6 +358,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </form>
         )}
+
+        {/* --- BRANDS & LOGOS MASTER TOGGLE CONTROL --- */}
+        <div className="my-3 p-3.5 sm:p-4 rounded-xl border border-white/10 glass-panel bg-gradient-to-r from-obsidian-950 via-white/[0.02] to-black flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${
+              isBrandsEnabled
+                ? 'bg-cinema-amber/15 border-cinema-amber/40 text-cinema-amber shadow-md shadow-cinema-amber/10'
+                : 'bg-white/5 border-white/10 text-neutral-500'
+            }`}>
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xs font-mono font-bold text-white tracking-wider uppercase truncate">
+                  BRANDS &amp; TOURNAMENT LOGOS SHOWCASE
+                </h3>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold tracking-wider uppercase border transition-all ${
+                  isBrandsEnabled
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                    : 'bg-neutral-800 border-neutral-700 text-neutral-400'
+                }`}>
+                  {isBrandsEnabled ? 'ACTIVE • SHOWN' : 'DISABLED • PREVIOUS LAYOUT'}
+                </span>
+              </div>
+              <p className="text-[11px] font-mono text-neutral-400 mt-0.5 leading-snug">
+                {isBrandsEnabled
+                  ? 'Picklefest Tournament showcase, transparent logo, and Brands & Creators section are live on the portfolio.'
+                  : 'Turned off. Website is returned to before (standard selected works only, no brands or tournament showcase).'}
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Switch */}
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+            <span className="text-[10px] sm:text-[11px] font-mono text-neutral-400 hidden md:inline">
+              {isBrandsEnabled ? 'Return to before:' : 'Turn on brands & logo:'}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isBrandsEnabled}
+              onClick={() => handleToggleBrandsAndLogos(!isBrandsEnabled)}
+              className={`relative inline-flex h-7 w-13 sm:w-14 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-cinema-amber ${
+                isBrandsEnabled
+                  ? 'bg-cinema-amber border-cinema-amber shadow-md shadow-cinema-amber/30'
+                  : 'bg-neutral-800 border-neutral-700'
+              }`}
+            >
+              <span className="sr-only">Toggle brands and logos showcase</span>
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out mt-0.5 ${
+                  isBrandsEnabled ? 'translate-x-6 sm:translate-x-7 bg-obsidian-950' : 'translate-x-1 bg-neutral-400'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
 
         {/* Tab Switcher */}
         <div className="flex items-center gap-2 my-4 border-b border-white/10 pb-2">
@@ -719,6 +806,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       className="hidden"
                     />
                   </label>
+                </div>
+              </div>
+
+              {/* Brands & Tournament Showcase Visibility Switch */}
+              <div className="glass-panel-subtle p-4 rounded-xl border border-white/10 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <label className="block text-xs font-mono text-cinema-amber font-semibold uppercase">
+                      PORTFOLIO SECTIONS: BRANDS &amp; TOURNAMENT LOGOS
+                    </label>
+                    <p className="text-[11px] font-mono text-neutral-400 mt-0.5">
+                      Toggle the Picklefest Tournament Showcase, logo display, and Brands &amp; Creators section.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isBrandsEnabled}
+                    onClick={() => handleToggleBrandsAndLogos(!isBrandsEnabled)}
+                    className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-cinema-amber ${
+                      isBrandsEnabled
+                        ? 'bg-cinema-amber border-cinema-amber shadow-md shadow-cinema-amber/30'
+                        : 'bg-neutral-800 border-neutral-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out mt-0.5 ${
+                        isBrandsEnabled ? 'translate-x-7 bg-obsidian-950' : 'translate-x-1 bg-neutral-400'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <div className="text-[10px] font-mono text-neutral-400">
+                  Current status: <strong className={isBrandsEnabled ? 'text-emerald-400' : 'text-neutral-300'}>{isBrandsEnabled ? 'Enabled (Full Brands & Picklefest Showcase Visible)' : 'Disabled (Website Returned to Previous Gallery Layout)'}</strong>
                 </div>
               </div>
 

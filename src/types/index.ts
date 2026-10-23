@@ -61,4 +61,5 @@ export interface UserProfile {
     label: string;
     value: string;
   }[];
+  showBrandsAndLogos?: boolean;
 }

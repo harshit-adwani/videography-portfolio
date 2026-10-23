@@ -52,7 +52,8 @@ export const App: React.FC = () => {
       { label: "Based In", value: "Jaipur" },
       { label: "Creative Focus", value: "Events & Reels" },
       { label: "Workflow", value: "Fast Turnaround" }
-    ]
+    ],
+    showBrandsAndLogos: true
   }));
 
   const [projects, setProjects] = useState<VideoProject[]>(() => initialProjects);
@@ -470,6 +471,19 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleScrollToBrands = () => {
+    restoreScrollMomentum();
+    canUnlockRef.current = true;
+    updateGateState('unlocked');
+    scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+    setScrollProgress(BREAKTHROUGH_PROGRESS);
+    setIsWalkthroughActive(true);
+    const el = document.getElementById('brands');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleScrollToTop = () => {
     restoreScrollMomentum();
     canUnlockRef.current = false;
@@ -477,7 +491,7 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Support direct section hash navigation (#gallery, #contact, #intro-timeline)
+  // Support direct section hash navigation (#gallery, #picklefest, #brands, #contact, #intro-timeline)
   useEffect(() => {
     const handleHashNav = () => {
       const hash = window.location.hash;
@@ -489,6 +503,24 @@ export const App: React.FC = () => {
         setScrollProgress(BREAKTHROUGH_PROGRESS);
         setIsWalkthroughActive(true);
         const el = document.getElementById('gallery');
+        if (el) el.scrollIntoView({ behavior: 'instant' });
+      } else if (hash === '#picklefest') {
+        restoreScrollMomentum();
+        canUnlockRef.current = true;
+        updateGateState('unlocked');
+        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+        setScrollProgress(BREAKTHROUGH_PROGRESS);
+        setIsWalkthroughActive(true);
+        const el = document.getElementById('picklefest') || document.getElementById('gallery');
+        if (el) el.scrollIntoView({ behavior: 'instant' });
+      } else if (hash === '#brands') {
+        restoreScrollMomentum();
+        canUnlockRef.current = true;
+        updateGateState('unlocked');
+        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+        setScrollProgress(BREAKTHROUGH_PROGRESS);
+        setIsWalkthroughActive(true);
+        const el = document.getElementById('brands') || document.getElementById('gallery');
         if (el) el.scrollIntoView({ behavior: 'instant' });
       } else if (hash === '#contact') {
         restoreScrollMomentum();
@@ -575,6 +607,7 @@ export const App: React.FC = () => {
 
       <Navbar
         onScrollToGallery={handleScrollToGallery}
+        onScrollToBrands={profile.showBrandsAndLogos !== false ? handleScrollToBrands : undefined}
         onScrollToContact={handleScrollToContact}
       />
 
@@ -610,6 +643,7 @@ export const App: React.FC = () => {
           projects={projects} 
           onSelectProject={setActiveProject} 
           isViewfinderActive={isWalkthroughActive} 
+          showBrandsAndLogos={profile.showBrandsAndLogos !== false}
         />
 
         {/* ACT 4: THE CLIMAX (Full-Page "Let's create the next masterpiece" Outro) */}
@@ -637,6 +671,7 @@ export const App: React.FC = () => {
         onClose={() => setIsAdminDashboardOpen(false)}
         onProjectsUpdated={handleProjectsUpdated}
         onProfileUpdated={handleProfileUpdated}
+        profile={profile}
       />
 
       <CinemaModal

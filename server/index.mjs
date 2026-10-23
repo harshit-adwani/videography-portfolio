@@ -18,14 +18,16 @@ const uploadsDir = path.join(rootDir, 'public', 'uploads');
 const videosDir = path.join(uploadsDir, 'videos');
 const postersDir = path.join(uploadsDir, 'posters');
 const avatarsDir = path.join(uploadsDir, 'avatars');
+const brandLogosDir = path.join(uploadsDir, 'brands');
 
-[dataDir, uploadsDir, videosDir, postersDir, avatarsDir].forEach((dir) => {
+[dataDir, uploadsDir, videosDir, postersDir, avatarsDir, brandLogosDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
 const projectsFilePath = path.join(dataDir, 'projects.json');
+const brandsFilePath = path.join(dataDir, 'brands.json');
 const profileFilePath = path.join(dataDir, 'profile.json');
 const authFilePath = path.join(dataDir, 'auth.json');
 
@@ -61,6 +63,7 @@ const makeStorage = (destFolder) =>
 const uploadVideo = multer({ storage: makeStorage(videosDir) });
 const uploadPoster = multer({ storage: makeStorage(postersDir) });
 const uploadAvatar = multer({ storage: makeStorage(avatarsDir) });
+const uploadBrandLogo = multer({ storage: makeStorage(brandLogosDir) });
 
 // Helper to read/write JSON safely
 const readJson = (file, defaultVal = []) => {
@@ -106,6 +109,14 @@ app.post('/api/upload/avatar', uploadAvatar.single('avatar'), (req, res) => {
     return res.status(400).json({ error: 'No avatar file provided' });
   }
   const relativeUrl = `/uploads/avatars/${req.file.filename}`;
+  res.json({ url: relativeUrl, filename: req.file.filename });
+});
+
+app.post('/api/upload/brand-logo', uploadBrandLogo.single('logo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No brand logo file provided' });
+  }
+  const relativeUrl = `/uploads/brands/${req.file.filename}`;
   res.json({ url: relativeUrl, filename: req.file.filename });
 });
 
@@ -193,6 +204,71 @@ app.post('/api/projects/reorder', (req, res) => {
     return res.json(reordered);
   }
   res.status(400).json({ error: 'orderedProjects array required' });
+});
+
+// --- BRANDS & CREATORS CRUD ---
+app.get('/api/brands', (req, res) => {
+  const brands = readJson(brandsFilePath, []);
+  res.json(brands);
+});
+
+app.post('/api/brands', (req, res) => {
+  const currentBrands = readJson(brandsFilePath, []);
+  const brandData = req.body;
+
+  if (!brandData.name) {
+    return res.status(400).json({ error: 'Brand name is required' });
+  }
+
+  const existingIdx = currentBrands.findIndex((b) => b.id === brandData.id);
+  let savedBrand;
+
+  if (existingIdx >= 0) {
+    savedBrand = {
+      ...currentBrands[existingIdx],
+      ...brandData,
+    };
+    currentBrands[existingIdx] = savedBrand;
+  } else {
+    const id = brandData.id || `brand-${Date.now()}`;
+    savedBrand = {
+      id,
+      name: brandData.name,
+      category: brandData.category || 'Brand Partner',
+      role: brandData.role || 'Videographer & Editor',
+      badge: brandData.badge || 'Collaborator',
+      logoUrl: brandData.logoUrl || '',
+      iconType: brandData.iconType || 'building',
+      description: brandData.description || '',
+      deliverables: Array.isArray(brandData.deliverables) ? brandData.deliverables : [],
+      websiteUrl: brandData.websiteUrl || '',
+      featured: brandData.featured ?? false,
+      isPublished: brandData.isPublished ?? true,
+      order: currentBrands.length + 1,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    currentBrands.push(savedBrand);
+  }
+
+  writeJson(brandsFilePath, currentBrands);
+  res.json(savedBrand);
+});
+
+app.delete('/api/brands/:id', (req, res) => {
+  const currentBrands = readJson(brandsFilePath, []);
+  const filtered = currentBrands.filter((b) => b.id !== req.params.id);
+  writeJson(brandsFilePath, filtered);
+  res.json({ success: true, count: filtered.length });
+});
+
+app.post('/api/brands/reorder', (req, res) => {
+  const { orderedBrands } = req.body;
+  if (Array.isArray(orderedBrands)) {
+    const reordered = orderedBrands.map((b, idx) => ({ ...b, order: idx + 1 }));
+    writeJson(brandsFilePath, reordered);
+    return res.json(reordered);
+  }
+  res.status(400).json({ error: 'orderedBrands array required' });
 });
 
 // --- PROFILE ENDPOINTS ---

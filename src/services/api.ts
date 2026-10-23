@@ -1,5 +1,6 @@
 import { initialProfile, initialProjects } from '../data/initialProjects';
-import { UserProfile, VideoProject } from '../types';
+import { initialBrands } from '../data/initialBrands';
+import { BrandCollaborator, UserProfile, VideoProject } from '../types';
 
 const API_BASE = '/api';
 
@@ -101,6 +102,128 @@ class ApiService {
       console.warn('[ApiService] Server unreachable for reorder:', err);
     }
     localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(orderedProjects));
+  }
+
+  // --- BRANDS & CREATORS API ---
+  public async getBrands(): Promise<BrandCollaborator[]> {
+    try {
+      const res = await fetch(`${API_BASE}/brands`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(data));
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('[ApiService] Server unreachable for brands:', err);
+    }
+
+    try {
+      const local = localStorage.getItem('cine_portfolio_brands_v1');
+      if (local) return JSON.parse(local);
+    } catch (e) {
+      console.error(e);
+    }
+    return initialBrands;
+  }
+
+  public async saveBrand(brand: Partial<BrandCollaborator> & { name: string }): Promise<BrandCollaborator> {
+    try {
+      const res = await fetch(`${API_BASE}/brands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        this.updateLocalBrand(saved);
+        return saved;
+      }
+    } catch (err) {
+      console.warn('[ApiService] Server unreachable for brand save, using local fallback:', err);
+    }
+
+    return this.updateLocalBrand(brand);
+  }
+
+  private updateLocalBrand(brand: Partial<BrandCollaborator> & { name: string }): BrandCollaborator {
+    const local = localStorage.getItem('cine_portfolio_brands_v1');
+    const brands: BrandCollaborator[] = local ? JSON.parse(local) : [...initialBrands];
+    const idx = brands.findIndex((b) => b.id === brand.id);
+    let saved: BrandCollaborator;
+    if (idx >= 0) {
+      saved = { ...brands[idx], ...brand } as BrandCollaborator;
+      brands[idx] = saved;
+    } else {
+      saved = {
+        ...brand,
+        id: brand.id || `brand-${Date.now()}`,
+        category: brand.category || 'Brand Partner',
+        role: brand.role || 'Videographer & Editor',
+        badge: brand.badge || 'Collaborator',
+        description: brand.description || '',
+        deliverables: brand.deliverables || [],
+        isPublished: brand.isPublished ?? true,
+        order: brands.length + 1,
+        createdAt: new Date().toISOString().split('T')[0],
+      } as BrandCollaborator;
+      brands.push(saved);
+    }
+    localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(brands));
+    return saved;
+  }
+
+  public async deleteBrand(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/brands/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        this.deleteLocalBrand(id);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[ApiService] Server unreachable for brand delete:', err);
+    }
+
+    return this.deleteLocalBrand(id);
+  }
+
+  private deleteLocalBrand(id: string): boolean {
+    const local = localStorage.getItem('cine_portfolio_brands_v1');
+    if (local) {
+      const brands: BrandCollaborator[] = JSON.parse(local);
+      const filtered = brands.filter((b) => b.id !== id);
+      localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(filtered));
+      return true;
+    }
+    return false;
+  }
+
+  public async reorderBrands(orderedBrands: BrandCollaborator[]): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/brands/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedBrands }),
+      });
+    } catch (err) {
+      console.warn('[ApiService] Server unreachable for brand reorder:', err);
+    }
+    localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(orderedBrands));
+  }
+
+  public async uploadBrandLogoFile(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    const res = await fetch(`${API_BASE}/upload/brand-logo`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error('Logo upload failed');
+    const data = await res.json();
+    return data.url;
   }
 
   // --- PROFILE API ---

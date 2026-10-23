@@ -1,5 +1,85 @@
 [
   {
+    "id": "proj-1792740403122",
+    "title": "Jecrc Campus Edit",
+    "slug": "jecrc-campus-edit",
+    "category": "Social Reel",
+    "client": "",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "9:16",
+    "roles": [
+      "Editor"
+    ],
+    "cameraGear": "SONY ZVE10",
+    "editingSoftware": "Adobe Premiere Pro",
+    "videoUrl": "https://www.instagram.com/p/DeHWYQuspRc/",
+    "previewUrl": "https://www.instagram.com/p/DeHWYQuspRc/",
+    "posterUrl": "/uploads/posters/screenshot_2026-10-23_125521-1792740401364-9077.png",
+    "description": "",
+    "links": [],
+    "featured": false,
+    "isPublished": true,
+    "order": 1,
+    "createdAt": "2026-10-23"
+  },
+  {
+    "id": "proj-1792740096757",
+    "title": "Picklefest Ad 3",
+    "slug": "picklefest-ad-3",
+    "category": "Social Reel",
+    "client": "Picklefest",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "9:16",
+    "roles": [
+      "Videographer",
+      "Editor"
+    ],
+    "cameraGear": "SONY ZVE10",
+    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
+    "videoUrl": "https://www.instagram.com/p/Daj8epJzN0r/",
+    "previewUrl": "https://www.instagram.com/p/Daj8epJzN0r/",
+    "posterUrl": "/uploads/posters/whatsapp_image_2026-10-23_at_12_52_55_pm-1792740216570-5042.jpeg",
+    "description": "Took on the responsibility to for the ideation, screenwriting, shooting, editing and final delivery for this project for Picklefest, A sports tournament organisation",
+    "links": [],
+    "featured": false,
+    "isPublished": true,
+    "order": 2,
+    "createdAt": "2026-10-23"
+  },
+  {
+    "id": "proj-1792755834382",
+    "title": "Let's Play BTS Edit",
+    "slug": "let-s-play-bts-edit",
+    "category": "Social Reel",
+    "client": "Let's Play",
+    "year": "2026",
+    "runtime": "00:45",
+    "aspectRatio": "9:16",
+    "roles": [
+      "Director",
+      "Editor",
+      "Visual Artist"
+    ],
+    "cameraGear": "Sony ZV-E10",
+    "editingSoftware": "Premiere Pro",
+    "videoUrl": "https://www.instagram.com/p/Dck3kVuhg0n/",
+    "previewUrl": "https://www.instagram.com/p/Dck3kVuhg0n/",
+    "posterUrl": "/uploads/posters/screenshot_2026-10-23_171343-1792755832361-5132.png",
+    "description": "Vertical BTS Reel",
+    "links": [
+      {
+        "label": "Watch on Instagram",
+        "url": "https://www.instagram.com/p/Dck3kVuhg0n/"
+      }
+    ],
+    "featured": false,
+    "isPublished": true,
+    "order": 3,
+    "createdAt": "2026-10-23"
+  },
+  {
     "id": "proj-1791998946763",
     "title": "PickleFest Advertisement",
     "slug": "picklefest-advertisement",
@@ -26,32 +106,38 @@
     ],
     "featured": false,
     "isPublished": true,
-    "order": 1,
+    "order": 4,
     "createdAt": "2026-10-14"
   },
   {
-    "id": "proj-1792740403122",
-    "title": "Campus Edit",
-    "slug": "campus-edit",
+    "id": "proj-1792756108247",
+    "title": "If i could make days last forever",
+    "slug": "if-i-could-make-days-last-forever",
     "category": "Commercial",
-    "client": "",
+    "client": "Personal",
     "year": "2026",
     "runtime": "01:30",
     "aspectRatio": "9:16",
     "roles": [
       "Director",
-      "Editor"
+      "Editor",
+      "Cinematographer"
     ],
-    "cameraGear": "SONY ZVE10",
-    "editingSoftware": "Adobe Premiere Pro",
-    "videoUrl": "/uploads/videos/campus_edit_intro_2-1792740387609-544.mp4",
-    "previewUrl": "/uploads/videos/campus_edit_intro_2-1792740387609-544.mp4",
-    "posterUrl": "/uploads/posters/screenshot_2026-10-23_125521-1792740401364-9077.png",
-    "description": "",
-    "links": [],
+    "cameraGear": "Sony ZV-E10 / Cinema Rig",
+    "editingSoftware": "Premiere Pro & After Effects",
+    "videoUrl": "https://www.youtube.com/shorts/DFaXxwbmRE0",
+    "previewUrl": "https://www.youtube.com/shorts/DFaXxwbmRE0",
+    "posterUrl": "https://img.youtube.com/vi/DFaXxwbmRE0/maxresdefault.jpg",
+    "description": "Cinematic reel",
+    "links": [
+      {
+        "label": "Watch on YouTube",
+        "url": "https://www.youtube.com/shorts/DFaXxwbmRE0"
+      }
+    ],
     "featured": false,
     "isPublished": true,
-    "order": 2,
+    "order": 5,
     "createdAt": "2026-10-23"
   },
   {
@@ -81,63 +167,8 @@
     ],
     "featured": false,
     "isPublished": false,
-    "order": 3,
+    "order": 6,
     "createdAt": "2026-10-14"
-  },
-  {
-    "id": "proj-1790441388608",
-    "title": "JECRC Campus Collab",
-    "slug": "jecrc-campus-collab",
-    "category": "Social Reel",
-    "client": "Socialz",
-    "year": "2026",
-    "runtime": "01:30",
-    "aspectRatio": "16:9",
-    "roles": [
-      "Director",
-      "Editor"
-    ],
-    "cameraGear": "Sony FX6 + Cine Primes",
-    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
-    "videoUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
-    "previewUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
-    "posterUrl": "/uploads/posters/screenshot_2026-09-21_211239-1790441385233-7949.png",
-    "description": "The clips are shot by me and somil and entire video was edited by me",
-    "links": [
-      {
-        "label": "Watch 4K Release",
-        "url": "https://vimeo.com"
-      }
-    ],
-    "featured": false,
-    "isPublished": true,
-    "order": 4,
-    "createdAt": "2026-09-26"
-  },
-  {
-    "id": "proj-1792740096757",
-    "title": "Picklefest AD 3",
-    "slug": "picklefest-ad-3",
-    "category": "Commercial",
-    "client": "Picklefest",
-    "year": "2026",
-    "runtime": "01:30",
-    "aspectRatio": "16:9",
-    "roles": [
-      "Director",
-      "Editor"
-    ],
-    "cameraGear": "SONY ZVE10",
-    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
-    "videoUrl": "/uploads/videos/sequence_01_1-1792740076162-4908.mp4",
-    "previewUrl": "/uploads/videos/sequence_01_1-1792740076162-4908.mp4",
-    "posterUrl": "/uploads/posters/whatsapp_image_2026-10-23_at_12_52_55_pm-1792740216570-5042.jpeg",
-    "description": "",
-    "links": [],
-    "featured": false,
-    "isPublished": true,
-    "order": 5,
-    "createdAt": "2026-10-23"
   },
   {
     "id": "proj-1791997502071",
@@ -166,7 +197,37 @@
     ],
     "featured": false,
     "isPublished": true,
-    "order": 6,
+    "order": 7,
     "createdAt": "2026-10-14"
+  },
+  {
+    "id": "proj-1790441388608",
+    "title": "JECRC Campus Collab Edit",
+    "slug": "jecrc-campus-collab-edit",
+    "category": "Social Reel",
+    "client": "Socialz",
+    "year": "2026",
+    "runtime": "01:30",
+    "aspectRatio": "16:9",
+    "roles": [
+      "Videographer",
+      "Editor"
+    ],
+    "cameraGear": "Sony FX6 + Cine Primes",
+    "editingSoftware": "DaVinci Resolve Studio & Premiere Pro",
+    "videoUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
+    "previewUrl": "/uploads/videos/socialz_edit_1_9-1790441374536-4380.mp4",
+    "posterUrl": "/uploads/posters/screenshot_2026-09-21_211239-1790441385233-7949.png",
+    "description": "The clips are shot by me and somil and entire video was edited by me",
+    "links": [
+      {
+        "label": "Watch 4K Release",
+        "url": "https://vimeo.com"
+      }
+    ],
+    "featured": false,
+    "isPublished": true,
+    "order": 8,
+    "createdAt": "2026-09-26"
   }
 ]

@@ -63,3 +63,29 @@ export interface UserProfile {
   }[];
   showBrandsAndLogos?: boolean;
 }
+
+export type BrandIconType = 
+  | 'trophy' 
+  | 'graduation-cap' 
+  | 'sparkles' 
+  | 'video' 
+  | 'building' 
+  | 'camera' 
+  | 'award';
+
+export interface BrandCollaborator {
+  id: string;
+  name: string;
+  category: string;
+  role: string;
+  badge: string;
+  logoUrl?: string;
+  iconType?: BrandIconType;
+  description: string;
+  deliverables: string[];
+  websiteUrl?: string;
+  featured?: boolean;
+  isPublished: boolean;
+  order?: number;
+  createdAt?: string;
+}

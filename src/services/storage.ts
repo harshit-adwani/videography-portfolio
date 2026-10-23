@@ -1,8 +1,10 @@
 import { initialProfile, initialProjects } from '../data/initialProjects';
-import { UserProfile, VideoProject } from '../types';
+import { initialBrands } from '../data/initialBrands';
+import { BrandCollaborator, UserProfile, VideoProject } from '../types';
 
 const STORAGE_KEYS = {
   PROJECTS: 'cine_portfolio_projects_v1',
+  BRANDS: 'cine_portfolio_brands_v1',
   PROFILE: 'cine_portfolio_profile_v1',
   ADMIN_AUTH: 'cine_portfolio_admin_auth',
   ADMIN_PASS: 'cine_portfolio_admin_pass',
@@ -117,7 +119,73 @@ class StorageService {
 
   public resetToDefaults(): void {
     localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(initialProjects));
+    localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(initialBrands));
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(initialProfile));
+  }
+
+  // --- BRANDS & CREATORS ---
+  public getBrands(includeDrafts = false): BrandCollaborator[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.BRANDS);
+      if (!data) {
+        localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(initialBrands));
+        return includeDrafts ? initialBrands : initialBrands.filter(b => b.isPublished !== false);
+      }
+      const brands: BrandCollaborator[] = JSON.parse(data);
+      const sorted = brands.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      return includeDrafts ? sorted : sorted.filter(b => b.isPublished !== false);
+    } catch (e) {
+      console.error("Failed to load brands from storage", e);
+      return initialBrands;
+    }
+  }
+
+  public saveBrand(brand: Partial<BrandCollaborator> & { name: string }): BrandCollaborator {
+    const current = this.getBrands(true);
+    const existingIndex = current.findIndex(b => b.id === brand.id);
+    let savedBrand: BrandCollaborator;
+
+    if (existingIndex >= 0) {
+      savedBrand = {
+        ...current[existingIndex],
+        ...brand,
+      } as BrandCollaborator;
+      current[existingIndex] = savedBrand;
+    } else {
+      const id = brand.id || `brand-${Date.now()}`;
+      savedBrand = {
+        id,
+        name: brand.name,
+        category: brand.category || 'Brand Partner',
+        role: brand.role || 'Videographer & Editor',
+        badge: brand.badge || 'Collaborator',
+        logoUrl: brand.logoUrl || '',
+        iconType: brand.iconType || 'building',
+        description: brand.description || '',
+        deliverables: brand.deliverables || [],
+        websiteUrl: brand.websiteUrl || '',
+        featured: brand.featured ?? false,
+        isPublished: brand.isPublished ?? true,
+        order: current.length + 1,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      current.push(savedBrand);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(current));
+    return savedBrand;
+  }
+
+  public deleteBrand(id: string): boolean {
+    const current = this.getBrands(true);
+    const filtered = current.filter(b => b.id !== id);
+    localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(filtered));
+    return filtered.length !== current.length;
+  }
+
+  public reorderBrands(newOrder: BrandCollaborator[]): void {
+    const reordered = newOrder.map((b, idx) => ({ ...b, order: idx + 1 }));
+    localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(reordered));
   }
 
   // --- USER PROFILE ---

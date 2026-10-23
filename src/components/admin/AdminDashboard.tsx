@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { 
   ArrowDown, 
   ArrowUp, 
+  Award,
   Building2,
   Check, 
   Eye, 
   EyeOff, 
   Film, 
+  GraduationCap,
   Instagram,
   KeyRound, 
   Link2,
@@ -14,16 +16,20 @@ import {
   Pencil, 
   Plus, 
   RotateCcw, 
+  Sparkles,
   Trash2, 
+  Trophy,
   Upload, 
   User, 
+  Video,
   X,
   Youtube 
 } from 'lucide-react';
-import { UserProfile, VideoProject } from '../../types';
+import { BrandCollaborator, UserProfile, VideoProject } from '../../types';
 import { api } from '../../services/api';
 import { storage } from '../../services/storage';
 import { VideoEditModal } from './VideoEditModal';
+import { BrandEditModal } from './BrandEditModal';
 import { getYouTubeThumbnail, parseInstagramId, parseYouTubeId } from '../../utils/videoEmbed';
 
 interface AdminDashboardProps {
@@ -31,6 +37,7 @@ interface AdminDashboardProps {
   onClose: () => void;
   onProjectsUpdated: () => void;
   onProfileUpdated?: (profile: UserProfile) => void;
+  onBrandsUpdated?: () => void;
   profile?: UserProfile;
 }
 
@@ -41,10 +48,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onProfileUpdated,
   profile: initialProfileProp,
 }) => {
-  const [activeTab, setActiveTab] = useState<'projects' | 'profile'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'brands' | 'profile'>('projects');
   const [projects, setProjects] = useState<VideoProject[]>([]);
   const [editingProject, setEditingProject] = useState<VideoProject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Brands & Creators State
+  const [brands, setBrands] = useState<BrandCollaborator[]>([]);
+  const [editingBrand, setEditingBrand] = useState<BrandCollaborator | null>(null);
+  const [isBrandEditModalOpen, setIsBrandEditModalOpen] = useState(false);
+
   const [showPasscodeChange, setShowPasscodeChange] = useState(false);
   const [newPass, setNewPass] = useState('');
   const [passMessage, setPassMessage] = useState('');
@@ -168,8 +181,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const loadData = async () => {
     const list = await api.getProjects();
     setProjects(list);
+    const bList = await api.getBrands();
+    setBrands(bList);
     const prof = await api.getProfile();
-    setProfile(prof);
+    setProfile(prof || initialProfileProp);
   };
 
   if (!isOpen) return null;
@@ -178,6 +193,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const list = await api.getProjects();
     setProjects(list);
     onProjectsUpdated();
+  };
+
+  const refreshBrandsList = async () => {
+    const list = await api.getBrands();
+    setBrands(list);
+    if (onBrandsUpdated) onBrandsUpdated();
   };
 
   const handleSaveProject = async (data: Partial<VideoProject> & { title: string }) => {
@@ -200,6 +221,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     refreshList();
   };
 
+  const handleSaveBrand = async (data: Partial<BrandCollaborator> & { name: string }) => {
+    await api.saveBrand(data);
+    refreshBrandsList();
+  };
+
+  const handleDeleteBrand = async (id: string) => {
+    if (confirm("Are you sure you want to remove this brand / creator?")) {
+      await api.deleteBrand(id);
+      refreshBrandsList();
+    }
+  };
+
+  const handleTogglePublishBrand = async (brandItem: BrandCollaborator) => {
+    await api.saveBrand({
+      ...brandItem,
+      isPublished: brandItem.isPublished === false ? true : false,
+    });
+    refreshBrandsList();
+  };
+
+  const handleMoveBrand = async (index: number, direction: 'up' | 'down') => {
+    const next = [...brands];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= next.length) return;
+
+    const temp = next[index];
+    next[index] = next[targetIndex];
+    next[targetIndex] = temp;
+
+    setBrands(next);
+    await api.reorderBrands(next);
+    if (onBrandsUpdated) onBrandsUpdated();
+  };
+
   const handleMove = async (index: number, direction: 'up' | 'down') => {
     const next = [...projects];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -214,9 +269,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleResetDefaults = () => {
-    if (confirm("Reset all projects to factory demo items? Any custom projects will be cleared.")) {
+    if (confirm("Reset all projects and brand partners to factory demo items?")) {
       storage.resetToDefaults();
       refreshList();
+      refreshBrandsList();
+      setProfile(storage.getProfile());
     }
   };
 
@@ -264,6 +321,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onClose();
   };
 
+  const renderBrandIcon = (type?: string) => {
+    switch (type) {
+      case 'trophy': return <Trophy className="w-5 h-5 text-cinema-amber" />;
+      case 'graduation-cap': return <GraduationCap className="w-5 h-5 text-cinema-amber" />;
+      case 'sparkles': return <Sparkles className="w-5 h-5 text-cinema-teal" />;
+      case 'video': return <Video className="w-5 h-5 text-cinema-red" />;
+      case 'award': return <Award className="w-5 h-5 text-amber-400" />;
+      case 'building':
+      default:
+        return <Building2 className="w-5 h-5 text-indigo-400" />;
+    }
+  };
+
   return (
     <div 
       onClick={onClose}
@@ -299,6 +369,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               >
                 <Plus className="w-4 h-4" />
                 ADD NEW VIDEO
+              </button>
+            )}
+
+            {activeTab === 'brands' && (
+              <button
+                onClick={() => {
+                  setEditingBrand(null);
+                  setIsBrandEditModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-2 transition-all shadow-md shadow-cinema-amber/20"
+              >
+                <Plus className="w-4 h-4" />
+                ADD NEW BRAND / CREATOR
               </button>
             )}
 
@@ -417,7 +500,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 my-4 border-b border-white/10 pb-2">
+        <div className="flex items-center gap-2 my-4 border-b border-white/10 pb-2 flex-wrap">
           <button
             onClick={() => setActiveTab('projects')}
             className={`px-4 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-2 transition-all ${
@@ -428,6 +511,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Film className="w-3.5 h-3.5" />
             <span>PORTFOLIO REELS ({projects.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('brands')}
+            className={`px-4 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'brands'
+                ? 'bg-cinema-amber text-obsidian-950 shadow-md shadow-cinema-amber/20'
+                : 'text-neutral-400 hover:text-white glass-panel'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>BRANDS &amp; CREATORS ({brands.length})</span>
           </button>
 
           <button
@@ -685,7 +780,191 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* --- TAB 2: BRAND & PROFILE PERSONALIZATION --- */}
+        {/* --- TAB 2: BRANDS & CREATORS DIRECTORY --- */}
+        {activeTab === 'brands' && (
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Top Prompt / Info Card */}
+            <div className="glass-panel p-3.5 sm:p-4 rounded-xl border border-white/10 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-cinema-amber/10 border border-cinema-amber/30 text-cinema-amber flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    COLLABORATIVE PARTNERS &amp; TOURNAMENT CLIENTS
+                  </h3>
+                  <p className="text-[11px] font-mono text-neutral-400">
+                    Upload transparent logos, configure client deliverables, and edit tournament details shown on your public site.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingBrand(null);
+                  setIsBrandEditModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cinema-amber/20 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>ADD NEW BRAND</span>
+              </button>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-neutral-400 uppercase">Total Collaborators</span>
+                <div className="text-xl font-bold font-mono text-white mt-0.5">{brands.length}</div>
+              </div>
+              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-neutral-400 uppercase">Publicly Live</span>
+                <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
+                  {brands.filter(b => b.isPublished !== false).length}
+                </div>
+              </div>
+              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-neutral-400 uppercase">Drafts (Hidden)</span>
+                <div className="text-xl font-bold font-mono text-neutral-400 mt-0.5">
+                  {brands.filter(b => b.isPublished === false).length}
+                </div>
+              </div>
+              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-neutral-400 uppercase">Featured</span>
+                <div className="text-xl font-bold font-mono text-cinema-amber mt-0.5">
+                  {brands.filter(b => b.featured).length}
+                </div>
+              </div>
+            </div>
+
+            {/* Brands List */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {brands.length === 0 ? (
+                <div className="glass-panel p-8 text-center text-neutral-400 font-mono text-xs rounded-xl space-y-2">
+                  <p>No brands or creators recorded yet.</p>
+                  <button
+                    onClick={() => {
+                      setEditingBrand(null);
+                      setIsBrandEditModalOpen(true);
+                    }}
+                    className="text-cinema-amber hover:underline text-xs"
+                  >
+                    Click here to add your first brand or creator
+                  </button>
+                </div>
+              ) : (
+                brands.map((brandItem, idx) => (
+                  <div
+                    key={brandItem.id}
+                    className="glass-panel p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/5 hover:border-white/15 transition-colors"
+                  >
+                    {/* Left: Logo/Icon & Info */}
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-black/80 border border-white/10 flex items-center justify-center p-1.5">
+                        {brandItem.logoUrl ? (
+                          <img
+                            src={brandItem.logoUrl}
+                            alt={brandItem.name}
+                            className="max-h-full max-w-full object-contain filter drop-shadow"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            {renderBrandIcon(brandItem.iconType)}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm font-bold text-white truncate font-sans">
+                            {brandItem.name}
+                          </h4>
+                          {brandItem.badge && (
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-neutral-300 border border-white/10">
+                              {brandItem.badge}
+                            </span>
+                          )}
+                          {brandItem.featured && (
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cinema-amber/20 text-cinema-amber border border-cinema-amber/30">
+                              FEATURED
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs font-mono text-neutral-400 mt-1 flex-wrap">
+                          <span className="text-cinema-amber">{brandItem.category}</span>
+                          <span>•</span>
+                          <span className="text-neutral-300">Role: {brandItem.role}</span>
+                        </div>
+
+                        <p className="text-xs text-neutral-400 mt-1 line-clamp-1">
+                          {brandItem.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Controls */}
+                    <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                      <div className="flex items-center bg-black/40 rounded-lg border border-white/10 p-0.5">
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => handleMoveBrand(idx, 'up')}
+                          className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-30"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          disabled={idx === brands.length - 1}
+                          onClick={() => handleMoveBrand(idx, 'down')}
+                          className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-30"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => handleTogglePublishBrand(brandItem)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-colors ${
+                          brandItem.isPublished !== false
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                            : 'bg-neutral-800 text-neutral-400 border-white/10 hover:text-white'
+                        }`}
+                        title={brandItem.isPublished !== false ? "Live on site" : "Draft (Hidden)"}
+                      >
+                        {brandItem.isPublished !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        <span>{brandItem.isPublished !== false ? "Published" : "Draft"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setEditingBrand(brandItem);
+                          setIsBrandEditModalOpen(true);
+                        }}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-200 hover:text-white transition-colors border border-white/10"
+                        title="Edit Brand / Creator"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteBrand(brandItem.id)}
+                        className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 transition-colors"
+                        title="Delete Brand / Creator"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB 3: BRAND & PROFILE PERSONALIZATION --- */}
         {activeTab === 'profile' && (
           <div className="flex-1 overflow-y-auto pr-1">
             {profileSavedMsg && (
@@ -862,6 +1141,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveProject}
+      />
+
+      {/* Add / Edit Brand & Creator Modal */}
+      <BrandEditModal
+        brand={editingBrand}
+        isOpen={isBrandEditModalOpen}
+        onClose={() => setIsBrandEditModalOpen(false)}
+        onSave={handleSaveBrand}
       />
     </div>
   );

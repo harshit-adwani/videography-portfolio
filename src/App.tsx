@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from './services/api';
-import { UserProfile, VideoProject } from './types';
+import { BrandCollaborator, UserProfile, VideoProject } from './types';
 import { initialProjects } from './data/initialProjects';
+import { initialBrands } from './data/initialBrands';
 import { ANIMATION_CONFIG } from './config/animationConfig';
 import { CameraCanvas } from './components/3d/CameraCanvas';
 import { ViewfinderHUD } from './components/3d/ViewfinderHUD';
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
   }));
 
   const [projects, setProjects] = useState<VideoProject[]>(() => initialProjects);
+  const [brands, setBrands] = useState<BrandCollaborator[]>(() => initialBrands);
   const [activeProject, setActiveProject] = useState<VideoProject | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
@@ -71,6 +73,8 @@ export const App: React.FC = () => {
     const fetchData = async () => {
       const p = await api.getProjects();
       setProjects(p);
+      const b = await api.getBrands();
+      setBrands(b);
       const prof = await api.getProfile();
       setProfile(prof);
     };
@@ -422,6 +426,11 @@ export const App: React.FC = () => {
     setProjects(updated);
   };
 
+  const handleBrandsUpdated = async () => {
+    const updated = await api.getBrands();
+    setBrands(updated);
+  };
+
   const handleProfileUpdated = (newProfile: UserProfile) => {
     setProfile(newProfile);
   };
@@ -641,6 +650,7 @@ export const App: React.FC = () => {
         {/* ACT 3: THE WORKS (Portfolio Video Gallery) */}
         <GallerySection 
           projects={projects} 
+          brands={brands}
           onSelectProject={setActiveProject} 
           isViewfinderActive={isWalkthroughActive} 
           showBrandsAndLogos={profile.showBrandsAndLogos !== false}
@@ -670,6 +680,7 @@ export const App: React.FC = () => {
         isOpen={isAdminDashboardOpen}
         onClose={() => setIsAdminDashboardOpen(false)}
         onProjectsUpdated={handleProjectsUpdated}
+        onBrandsUpdated={handleBrandsUpdated}
         onProfileUpdated={handleProfileUpdated}
         profile={profile}
       />

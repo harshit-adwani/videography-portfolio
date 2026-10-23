@@ -1,15 +1,17 @@
 import React from 'react';
 import { Play, Trophy, Camera, Sparkles, ExternalLink, Film, CheckCircle2, Zap, Clock } from 'lucide-react';
-import { VideoProject } from '../../types';
+import { BrandCollaborator, VideoProject } from '../../types';
 
 interface PicklefestShowcaseProps {
   projects: VideoProject[];
   onSelectProject: (project: VideoProject) => void;
+  brand?: BrandCollaborator;
 }
 
 export const PicklefestShowcase: React.FC<PicklefestShowcaseProps> = React.memo(({
   projects,
   onSelectProject,
+  brand,
 }) => {
   // Extract all Picklefest projects or provide robust defaults
   const picklefestProjects = projects.filter(
@@ -103,22 +105,22 @@ export const PicklefestShowcase: React.FC<PicklefestShowcaseProps> = React.memo(
           </div>
 
           <h3 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white font-sans uppercase">
-            PICKLEFEST TOURNAMENT
+            {brand?.name || 'PICKLEFEST TOURNAMENT'}
           </h3>
 
           <p className="text-xs sm:text-sm md:text-base text-neutral-300 mt-2 sm:mt-3 max-w-2xl leading-relaxed">
-            Shot & edited courtside for the premier pickleball championship in Ajmer. High-intensity sports coverage, rapid rally cuts, and high-energy vertical reels optimized for social engagement and sponsor visibility.
+            {brand?.description || 'Shot & edited courtside for the premier pickleball championship in Ajmer. High-intensity sports coverage, rapid rally cuts, and high-energy vertical reels optimized for social engagement and sponsor visibility.'}
           </p>
 
           {/* Quick specs chips */}
           <div className="flex flex-wrap items-center gap-2 mt-4 text-[11px] font-mono text-neutral-400">
             <span className="px-2.5 py-1 rounded bg-black/40 border border-white/10 text-neutral-300 flex items-center gap-1.5">
               <Camera className="w-3.5 h-3.5 text-cinema-amber" />
-              Sony ZV-E10 • Handheld & Gimbal
+              Sony ZV-E10 • Handheld &amp; Gimbal
             </span>
             <span className="px-2.5 py-1 rounded bg-black/40 border border-white/10 text-neutral-300 flex items-center gap-1.5">
               <Film className="w-3.5 h-3.5 text-cinema-teal" />
-              Premiere Pro & After Effects
+              Premiere Pro &amp; After Effects
             </span>
             <span className="px-2.5 py-1 rounded bg-black/40 border border-white/10 text-neutral-300 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-emerald-400" />
@@ -134,17 +136,17 @@ export const PicklefestShowcase: React.FC<PicklefestShowcaseProps> = React.memo(
             <div className="absolute inset-0 bg-cinema-amber/10 rounded-2xl blur-xl group-hover:bg-cinema-amber/20 transition-all duration-500 pointer-events-none" />
 
             <img
-              src="/brands/picklefest.png"
-              alt="Picklefest Tournament Official Logo"
+              src={brand?.logoUrl || '/brands/picklefest.png'}
+              alt={`${brand?.name || 'Picklefest Tournament'} Official Logo`}
               className="relative z-10 h-16 sm:h-20 md:h-24 w-auto object-contain transition-transform duration-500 group-hover:scale-105 filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)]"
               loading="lazy"
             />
             <div className="relative z-10 mt-3 pt-2 border-t border-white/10 text-center w-full">
               <span className="text-[10px] font-mono uppercase tracking-widest text-cinema-amber font-semibold block">
-                OFFICIAL TOURNAMENT
+                {brand?.badge || 'OFFICIAL TOURNAMENT'}
               </span>
               <span className="text-[11px] text-neutral-400 font-sans block mt-0.5">
-                Videography & Editing Partner
+                {brand?.role || 'Videography & Editing Partner'}
               </span>
             </div>
           </div>

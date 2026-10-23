@@ -4,7 +4,6 @@ import {
   Building2, 
   Camera, 
   Check, 
-  ExternalLink, 
   GraduationCap, 
   Plus, 
   Sparkles, 

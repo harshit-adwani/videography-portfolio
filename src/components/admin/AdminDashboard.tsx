@@ -45,6 +45,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   isOpen,
   onClose,
   onProjectsUpdated,
+  onBrandsUpdated,
   onProfileUpdated,
   profile: initialProfileProp,
 }) => {

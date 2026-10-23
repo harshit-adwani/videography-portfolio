@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Film, Filter } from 'lucide-react';
-import { ProjectCategory, VideoProject } from '../../types';
+import { BrandCollaborator, ProjectCategory, VideoProject } from '../../types';
 import { VideoCard } from './VideoCard';
 import { PicklefestShowcase } from './PicklefestShowcase';
 import { BrandsSection } from './BrandsSection';
@@ -8,6 +8,7 @@ import { ANIMATION_CONFIG } from '../../config/animationConfig';
 
 interface GallerySectionProps {
   projects: VideoProject[];
+  brands?: BrandCollaborator[];
   onSelectProject: (project: VideoProject) => void;
   isViewfinderActive?: boolean;
   showBrandsAndLogos?: boolean;
@@ -24,6 +25,7 @@ const CATEGORIES: (ProjectCategory | 'All')[] = [
 
 export const GallerySection: React.FC<GallerySectionProps> = React.memo(({ 
   projects, 
+  brands,
   onSelectProject,
   isViewfinderActive = false,
   showBrandsAndLogos = true,
@@ -33,6 +35,12 @@ export const GallerySection: React.FC<GallerySectionProps> = React.memo(({
   const filteredProjects = selectedCategory === 'All'
     ? projects
     : projects.filter(p => p.category === selectedCategory);
+
+  const picklefestBrand = brands?.find(
+    (b) =>
+      b.name.toLowerCase().includes('picklefest') ||
+      b.id.toLowerCase().includes('picklefest')
+  );
 
   return (
     <section 
@@ -112,11 +120,12 @@ export const GallerySection: React.FC<GallerySectionProps> = React.memo(({
           {/* --- ACT 3.1: DEDICATED PICKLEFEST TOURNAMENT SHOWCASE --- */}
           <PicklefestShowcase
             projects={projects}
+            brand={picklefestBrand}
             onSelectProject={onSelectProject}
           />
 
           {/* --- ACT 3.2: BRANDS & CREATORS PORTFOLIO SECTION --- */}
-          <BrandsSection />
+          <BrandsSection brands={brands} />
         </>
       )}
     </section>

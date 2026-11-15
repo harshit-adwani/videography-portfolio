@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Calendar, Camera, Clock, ExternalLink, Play, Tag } from 'lucide-react';
+import { Calendar, Clock, ExternalLink, Play } from 'lucide-react';
 import { VideoProject } from '../../types';
 import { parseVideoSource } from '../../utils/videoEmbed';
 
@@ -146,18 +146,6 @@ export const VideoCard: React.FC<VideoCardProps> = React.memo(({ project, onClic
           <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed break-words">
             {project.description}
           </p>
-
-          {/* Technical Specs Tags - w-0 flex-1 min-w-0 ensures zero flex-basis prevents text content from expanding card width */}
-          <div className="pt-2 space-y-1.5 font-mono text-[11px] min-w-0">
-            <div className="flex items-center gap-2 text-neutral-400 min-w-0">
-              <Camera className="w-3.5 h-3.5 text-cinema-amber shrink-0" />
-              <span className="w-0 flex-1 min-w-0 truncate text-neutral-300">{project.cameraGear}</span>
-            </div>
-            <div className="flex items-center gap-2 text-neutral-400 min-w-0">
-              <Tag className="w-3.5 h-3.5 text-cinema-teal shrink-0" />
-              <span className="w-0 flex-1 min-w-0 truncate text-neutral-300">{project.editingSoftware}</span>
-            </div>
-          </div>
         </div>
 
         {/* Bottom Roles and Click Prompt */}

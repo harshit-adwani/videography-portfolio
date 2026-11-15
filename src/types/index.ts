@@ -16,14 +16,15 @@ export interface VideoProject {
   id: string;
   title: string;
   slug: string;
-  category: ProjectCategory;
+  category: ProjectCategory | string;
+  categoryId?: string;
   client?: string;
   year: string;
   runtime: string;
   aspectRatio: '16:9' | '9:16' | '2.39:1' | '4:3';
   roles: string[];
-  cameraGear: string;
-  editingSoftware: string;
+  cameraGear?: string;
+  editingSoftware?: string;
   videoUrl: string;
   previewUrl?: string; // Optional short clip for hover-scrubbing
   posterUrl: string;
@@ -89,3 +90,5 @@ export interface BrandCollaborator {
   order?: number;
   createdAt?: string;
 }
+
+export type PortfolioCategory = BrandCollaborator;

@@ -3,26 +3,29 @@ import {
   ArrowDown, 
   ArrowUp, 
   Award,
-  Building2,
+  Building2, 
   Check, 
+  ChevronDown, 
+  ChevronUp, 
   Eye, 
   EyeOff, 
   Film, 
-  GraduationCap,
-  Instagram,
+  FolderGit2, 
+  GraduationCap, 
+  Instagram, 
   KeyRound, 
-  Link2,
+  Link2, 
   LogOut, 
   Pencil, 
   Plus, 
   RotateCcw, 
-  Sparkles,
+  Sparkles, 
   Trash2, 
-  Trophy,
+  Trophy, 
   Upload, 
   User, 
-  Video,
-  X,
+  Video, 
+  X, 
   Youtube 
 } from 'lucide-react';
 import { BrandCollaborator, UserProfile, VideoProject } from '../../types';
@@ -49,15 +52,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onProfileUpdated,
   profile: initialProfileProp,
 }) => {
-  const [activeTab, setActiveTab] = useState<'projects' | 'brands' | 'profile'>('projects');
+  const [activeTab, setActiveTab] = useState<'categories' | 'all_videos' | 'profile'>('categories');
   const [projects, setProjects] = useState<VideoProject[]>([]);
   const [editingProject, setEditingProject] = useState<VideoProject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [targetCategoryIdForNewVideo, setTargetCategoryIdForNewVideo] = useState<string>('');
 
-  // Brands & Creators State
+  // Categories / Clients State
   const [brands, setBrands] = useState<BrandCollaborator[]>([]);
   const [editingBrand, setEditingBrand] = useState<BrandCollaborator | null>(null);
   const [isBrandEditModalOpen, setIsBrandEditModalOpen] = useState(false);
+
+  // Expanded categories map (all expanded by default)
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   const [showPasscodeChange, setShowPasscodeChange] = useState(false);
   const [newPass, setNewPass] = useState('');
@@ -68,109 +75,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [profileSavedMsg, setProfileSavedMsg] = useState('');
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
 
+  // Quick Media Connect State
+  const [connectProvider, setConnectProvider] = useState<'youtube' | 'instagram'>('youtube');
+  const [quickMediaUrl, setQuickMediaUrl] = useState('');
+  const [quickMediaCategory, setQuickMediaCategory] = useState<string>('');
+  const [quickMediaError, setQuickMediaError] = useState('');
+
   useEffect(() => {
     if (initialProfileProp) {
       setProfile(initialProfileProp);
     }
   }, [initialProfileProp]);
 
-  const isBrandsEnabled = profile.showBrandsAndLogos !== false;
-
-  const handleToggleBrandsAndLogos = async (enabled: boolean) => {
-    const updatedProfile: UserProfile = {
-      ...profile,
-      showBrandsAndLogos: enabled,
-    };
-    setProfile(updatedProfile);
-    storage.saveProfile(updatedProfile);
-    const saved = await api.saveProfile(updatedProfile);
-    if (onProfileUpdated) {
-      onProfileUpdated(saved || updatedProfile);
+  useEffect(() => {
+    if (brands.length > 0 && !quickMediaCategory) {
+      setQuickMediaCategory(brands[0].id);
     }
-    setProfileSavedMsg(
-      enabled
-        ? '✓ Brands & tournament showcase enabled on website!'
-        : '✓ Brands & tournament showcase disabled — website returned to previous layout.'
-    );
-    setTimeout(() => setProfileSavedMsg(''), 4000);
-  };
+  }, [brands, quickMediaCategory]);
 
-  // Quick Media Connect State (YouTube + Instagram)
-  const [connectProvider, setConnectProvider] = useState<'youtube' | 'instagram'>('youtube');
-  const [quickMediaUrl, setQuickMediaUrl] = useState('');
-  const [quickMediaError, setQuickMediaError] = useState('');
-
-  const handleQuickConnect = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setQuickMediaError('');
-    const trimmed = quickMediaUrl.trim();
-    if (!trimmed) return;
-
-    const igId = parseInstagramId(trimmed);
-    const ytId = parseYouTubeId(trimmed);
-
-    // If Instagram link or on Instagram tab
-    if (igId || (connectProvider === 'instagram' && !ytId)) {
-      if (!igId) {
-        setQuickMediaError('Please enter a valid Instagram Reel link (e.g. https://www.instagram.com/reel/CODE/ or /p/CODE/)');
-        return;
-      }
-
-      const newProjDraft: Partial<VideoProject> & { title: string } = {
-        title: 'Instagram Reel • Visual Experience',
-        category: 'Social Reel',
-        year: new Date().getFullYear().toString(),
-        runtime: '00:45',
-        aspectRatio: '9:16',
-        roles: ['Director', 'Editor', 'Visual Artist'],
-        cameraGear: 'iPhone 15 Pro (ProRes Log) / Sony ZV-E10',
-        editingSoftware: 'Premiere Pro & After Effects',
-        videoUrl: trimmed,
-        posterUrl: '',
-        description: 'Vertical cinema reel embedded via Instagram Reel Player.',
-        links: [{ label: 'Watch on Instagram', url: trimmed }],
-        isPublished: true,
-        featured: false,
-      };
-
-      setQuickMediaUrl('');
-      setEditingProject(newProjDraft as VideoProject);
-      setIsEditModalOpen(true);
-      return;
-    }
-
-    // If YouTube link or on YouTube tab
-    if (ytId || (connectProvider === 'youtube' && !igId)) {
-      if (!ytId) {
-        setQuickMediaError('Please enter a valid YouTube link (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)');
-        return;
-      }
-
-      const poster = getYouTubeThumbnail(ytId);
-      const newProjDraft: Partial<VideoProject> & { title: string } = {
-        title: 'New YouTube Cinema Reel',
-        category: 'Commercial',
-        year: new Date().getFullYear().toString(),
-        runtime: '01:30',
-        aspectRatio: '16:9',
-        roles: ['Director', 'Editor'],
-        cameraGear: 'Sony ZV-E10 / Cinema Rig',
-        editingSoftware: 'Premiere Pro & After Effects',
-        videoUrl: trimmed,
-        posterUrl: poster,
-        description: 'Cinematic reel embedded via YouTube 4K feed.',
-        links: [{ label: 'Watch on YouTube', url: trimmed }],
-        isPublished: true,
-        featured: false,
-      };
-
-      setQuickMediaUrl('');
-      setEditingProject(newProjDraft as VideoProject);
-      setIsEditModalOpen(true);
-      return;
-    }
-
-    setQuickMediaError('Please paste a valid YouTube or Instagram Reel link.');
+  const loadData = async () => {
+    const p = await api.getProjects();
+    setProjects(p);
+    const b = await api.getBrands();
+    setBrands(b);
+    const prof = await api.getProfile();
+    if (prof) setProfile(prof);
   };
 
   useEffect(() => {
@@ -178,15 +107,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       loadData();
     }
   }, [isOpen]);
-
-  const loadData = async () => {
-    const list = await api.getProjects();
-    setProjects(list);
-    const bList = await api.getBrands();
-    setBrands(bList);
-    const prof = await api.getProfile();
-    setProfile(prof || initialProfileProp);
-  };
 
   if (!isOpen) return null;
 
@@ -202,19 +122,136 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (onBrandsUpdated) onBrandsUpdated();
   };
 
+  // Associate videos to category
+  const getVideosForCategory = (brand: BrandCollaborator): VideoProject[] => {
+    const bName = brand.name.toLowerCase();
+    const bId = brand.id.toLowerCase();
+
+    return projects.filter((p) => {
+      if (p.categoryId && p.categoryId.toLowerCase() === bId) return true;
+      if (p.client) {
+        const clientLower = p.client.toLowerCase();
+        if (clientLower === bName || bName.includes(clientLower) || clientLower.includes(bName)) {
+          return true;
+        }
+      }
+      if (bId.includes('picklefest') && (p.title.toLowerCase().includes('picklefest') || p.slug.includes('picklefest'))) {
+        return true;
+      }
+      if (bId.includes('alive-cafe') && (p.title.toLowerCase().includes('alive') || p.slug.includes('alive'))) {
+        return true;
+      }
+      if (bId.includes('jecrc') && (p.title.toLowerCase().includes('jecrc') || p.slug.includes('jecrc') || p.client?.toLowerCase().includes('socialz'))) {
+        return true;
+      }
+      if (bId.includes('lets-play') && (p.title.toLowerCase().includes('play') || p.client?.toLowerCase().includes('play'))) {
+        return true;
+      }
+      if (bId.includes('creative') && (p.client?.toLowerCase().includes('personal') || !p.client)) {
+        return true;
+      }
+      return false;
+    });
+  };
+
+  const toggleCategoryCollapse = (id: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleQuickConnect = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setQuickMediaError('');
+    const trimmed = quickMediaUrl.trim();
+    if (!trimmed) return;
+
+    const igId = parseInstagramId(trimmed);
+    const ytId = parseYouTubeId(trimmed);
+
+    const targetBrand = brands.find(b => b.id === quickMediaCategory) || brands[0];
+    const targetBrandName = targetBrand?.name || 'Client Project';
+
+    // Instagram Reel
+    if (igId || (connectProvider === 'instagram' && !ytId)) {
+      if (!igId) {
+        setQuickMediaError('Please enter a valid Instagram Reel link (e.g. https://www.instagram.com/reel/CODE/)');
+        return;
+      }
+
+      const newProjDraft: Partial<VideoProject> & { title: string } = {
+        title: `${targetBrandName} • Vertical Reel`,
+        category: 'Social Reel',
+        categoryId: targetBrand?.id || '',
+        client: targetBrandName,
+        year: new Date().getFullYear().toString(),
+        runtime: '00:45',
+        aspectRatio: '9:16',
+        roles: ['Director', 'Editor'],
+        videoUrl: trimmed,
+        posterUrl: targetBrand?.logoUrl || '',
+        description: `Vertical commercial reel created for ${targetBrandName}.`,
+        links: [{ label: 'Watch on Instagram', url: trimmed }],
+        isPublished: true,
+        featured: false,
+      };
+
+      setQuickMediaUrl('');
+      setTargetCategoryIdForNewVideo(targetBrand?.id || '');
+      setEditingProject(newProjDraft as VideoProject);
+      setIsEditModalOpen(true);
+      return;
+    }
+
+    // YouTube
+    if (ytId || (connectProvider === 'youtube' && !igId)) {
+      if (!ytId) {
+        setQuickMediaError('Please enter a valid YouTube link (e.g. https://youtu.be/... or watch?v=...)');
+        return;
+      }
+
+      const poster = getYouTubeThumbnail(ytId);
+      const newProjDraft: Partial<VideoProject> & { title: string } = {
+        title: `${targetBrandName} • Showcase Video`,
+        category: 'Commercial',
+        categoryId: targetBrand?.id || '',
+        client: targetBrandName,
+        year: new Date().getFullYear().toString(),
+        runtime: '01:30',
+        aspectRatio: '16:9',
+        roles: ['Director', 'Editor'],
+        videoUrl: trimmed,
+        posterUrl: poster || targetBrand?.logoUrl || '',
+        description: `Cinematic showcase created for ${targetBrandName}.`,
+        links: [{ label: 'Watch on YouTube', url: trimmed }],
+        isPublished: true,
+        featured: false,
+      };
+
+      setQuickMediaUrl('');
+      setTargetCategoryIdForNewVideo(targetBrand?.id || '');
+      setEditingProject(newProjDraft as VideoProject);
+      setIsEditModalOpen(true);
+      return;
+    }
+
+    setQuickMediaError('Please paste a valid YouTube or Instagram Reel link.');
+  };
+
   const handleSaveProject = async (data: Partial<VideoProject> & { title: string }) => {
     await api.saveProject(data);
     refreshList();
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this project?")) {
+  const handleDeleteProject = async (id: string) => {
+    if (confirm("Are you sure you want to delete this video reel?")) {
       await api.deleteProject(id);
       refreshList();
     }
   };
 
-  const handleTogglePublish = async (project: VideoProject) => {
+  const handleTogglePublishProject = async (project: VideoProject) => {
     await api.saveProject({
       ...project,
       isPublished: !project.isPublished,
@@ -228,7 +265,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleDeleteBrand = async (id: string) => {
-    if (confirm("Are you sure you want to remove this brand / creator?")) {
+    if (confirm("Are you sure you want to remove this client category? The videos inside will remain saved.")) {
       await api.deleteBrand(id);
       refreshBrandsList();
     }
@@ -256,7 +293,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (onBrandsUpdated) onBrandsUpdated();
   };
 
-  const handleMove = async (index: number, direction: 'up' | 'down') => {
+  const handleMoveProject = async (index: number, direction: 'up' | 'down') => {
     const next = [...projects];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= next.length) return;
@@ -270,7 +307,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleResetDefaults = () => {
-    if (confirm("Reset all projects and brand partners to factory demo items?")) {
+    if (confirm("Reset all categories and video projects to clean portfolio defaults?")) {
       storage.resetToDefaults();
       refreshList();
       refreshBrandsList();
@@ -298,7 +335,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const saved = await api.saveProfile(profile);
     setProfile(saved);
     if (onProfileUpdated) onProfileUpdated(saved);
-    setProfileSavedMsg('✓ Profile and brand settings saved to disk!');
+    setProfileSavedMsg('✓ Profile settings saved to disk!');
     setTimeout(() => setProfileSavedMsg(''), 3000);
   };
 
@@ -331,7 +368,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       case 'award': return <Award className="w-5 h-5 text-amber-400" />;
       case 'building':
       default:
-        return <Building2 className="w-5 h-5 text-indigo-400" />;
+        return <Building2 className="w-5 h-5 text-cinema-amber" />;
     }
   };
 
@@ -342,49 +379,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-6xl glass-panel-elevated rounded-2xl p-6 sm:p-8 border border-white/15 my-auto max-h-[92vh] flex flex-col shadow-2xl transition-all duration-300 animate-in zoom-in-95"
+        className="relative w-full max-w-6xl glass-panel-elevated rounded-2xl p-5 sm:p-8 border border-white/15 my-auto max-h-[92vh] flex flex-col shadow-2xl transition-all duration-300 animate-in zoom-in-95"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10 shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <h2 className="text-xl sm:text-2xl font-bold text-white font-sans">
+              <h2 className="text-xl sm:text-2xl font-bold text-white font-sans uppercase">
                 DIRECTOR CONTROL ROOM
               </h2>
             </div>
             <p className="text-xs font-mono text-neutral-400 mt-0.5">
-              Persistent studio backend • Real file uploads to disk
+              Topicwise portfolio manager • Client showcases &amp; video reels
             </p>
           </div>
 
           {/* Quick Actions */}
           <div className="flex items-center gap-2 flex-wrap">
-            {activeTab === 'projects' && (
-              <button
-                onClick={() => {
-                  setEditingProject(null);
-                  setIsEditModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-2 transition-all shadow-md shadow-cinema-amber/20"
-              >
-                <Plus className="w-4 h-4" />
-                ADD NEW VIDEO
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setEditingBrand(null);
+                setIsBrandEditModalOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-2 transition-all shadow-md shadow-cinema-amber/20"
+            >
+              <Plus className="w-4 h-4" />
+              ADD NEW CATEGORY / CLIENT
+            </button>
 
-            {activeTab === 'brands' && (
-              <button
-                onClick={() => {
-                  setEditingBrand(null);
-                  setIsBrandEditModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-2 transition-all shadow-md shadow-cinema-amber/20"
-              >
-                <Plus className="w-4 h-4" />
-                ADD NEW BRAND / CREATOR
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setTargetCategoryIdForNewVideo(brands[0]?.id || '');
+                setEditingProject(null);
+                setIsEditModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-mono text-xs flex items-center gap-2 transition-colors border border-white/15"
+            >
+              <Video className="w-3.5 h-3.5 text-cinema-amber" />
+              ADD VIDEO
+            </button>
 
             <button
               onClick={() => setShowPasscodeChange(!showPasscodeChange)}
@@ -397,45 +431,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={handleResetDefaults}
               className="px-3 py-2 rounded-xl glass-panel hover:bg-white/10 text-neutral-400 hover:text-white font-mono text-xs flex items-center gap-1.5 transition-colors border border-white/10"
-              title="Reset to default demo projects"
+              title="Reset to default demo items"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset
             </button>
 
             <button
               onClick={handleLogout}
-              className="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-mono text-xs flex items-center gap-1.5 transition-colors"
+              className="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-mono text-xs flex items-center gap-1.5 transition-colors border border-red-500/20"
+              title="Lock & Exit Control Room"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Exit
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors ml-2"
+              className="p-2 rounded-xl hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Change Passcode Drawer */}
+        {/* Change Passcode Slide-Down Form */}
         {showPasscodeChange && (
-          <form onSubmit={handleChangePassword} className="my-4 p-4 rounded-xl glass-panel-subtle border border-cinema-amber/30 flex flex-wrap items-center gap-3">
-            <span className="text-xs font-mono text-neutral-300">New Admin Passcode:</span>
+          <form
+            onSubmit={handleChangePassword}
+            className="my-3 p-4 rounded-xl glass-panel border border-cinema-amber/30 flex items-center gap-3 flex-wrap"
+          >
+            <span className="text-xs font-mono text-neutral-300">Set New Passcode:</span>
             <input
               type="password"
+              placeholder="Min 4 chars"
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
-              placeholder="Enter new secret"
               className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/15 text-white text-xs font-mono focus:outline-none focus:border-cinema-amber"
             />
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-lg bg-cinema-amber text-obsidian-950 font-bold font-mono text-xs hover:bg-amber-400"
+              className="px-3 py-1.5 rounded-lg bg-cinema-amber text-obsidian-950 font-bold font-mono text-xs"
             >
-              Save Passcode
+              Update Passcode
             </button>
             {passMessage && (
               <span className="text-xs font-mono text-emerald-400">{passMessage}</span>
@@ -443,87 +479,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </form>
         )}
 
-        {/* --- BRANDS & LOGOS MASTER TOGGLE CONTROL --- */}
-        <div className="my-3 p-3.5 sm:p-4 rounded-xl border border-white/10 glass-panel bg-gradient-to-r from-obsidian-950 via-white/[0.02] to-black flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${
-              isBrandsEnabled
-                ? 'bg-cinema-amber/15 border-cinema-amber/40 text-cinema-amber shadow-md shadow-cinema-amber/10'
-                : 'bg-white/5 border-white/10 text-neutral-500'
-            }`}>
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-xs font-mono font-bold text-white tracking-wider uppercase truncate">
-                  BRANDS &amp; TOURNAMENT LOGOS SHOWCASE
-                </h3>
-                <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold tracking-wider uppercase border transition-all ${
-                  isBrandsEnabled
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                    : 'bg-neutral-800 border-neutral-700 text-neutral-400'
-                }`}>
-                  {isBrandsEnabled ? 'ACTIVE • SHOWN' : 'DISABLED • PREVIOUS LAYOUT'}
-                </span>
-              </div>
-              <p className="text-[11px] font-mono text-neutral-400 mt-0.5 leading-snug">
-                {isBrandsEnabled
-                  ? 'Picklefest Tournament showcase, transparent logo, and Brands & Creators section are live on the portfolio.'
-                  : 'Turned off. Website is returned to before (standard selected works only, no brands or tournament showcase).'}
-              </p>
-            </div>
-          </div>
-
-          {/* Interactive Switch */}
-          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-            <span className="text-[10px] sm:text-[11px] font-mono text-neutral-400 hidden md:inline">
-              {isBrandsEnabled ? 'Return to before:' : 'Turn on brands & logo:'}
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isBrandsEnabled}
-              onClick={() => handleToggleBrandsAndLogos(!isBrandsEnabled)}
-              className={`relative inline-flex h-7 w-13 sm:w-14 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-cinema-amber ${
-                isBrandsEnabled
-                  ? 'bg-cinema-amber border-cinema-amber shadow-md shadow-cinema-amber/30'
-                  : 'bg-neutral-800 border-neutral-700'
-              }`}
-            >
-              <span className="sr-only">Toggle brands and logos showcase</span>
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out mt-0.5 ${
-                  isBrandsEnabled ? 'translate-x-6 sm:translate-x-7 bg-obsidian-950' : 'translate-x-1 bg-neutral-400'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 my-4 border-b border-white/10 pb-2 flex-wrap">
+        <div className="flex items-center gap-2 my-4 border-b border-white/10 pb-2 flex-wrap shrink-0">
           <button
-            onClick={() => setActiveTab('projects')}
+            onClick={() => setActiveTab('categories')}
             className={`px-4 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeTab === 'projects'
+              activeTab === 'categories'
+                ? 'bg-cinema-amber text-obsidian-950 shadow-md shadow-cinema-amber/20'
+                : 'text-neutral-400 hover:text-white glass-panel'
+            }`}
+          >
+            <FolderGit2 className="w-3.5 h-3.5" />
+            <span>CATEGORIES &amp; CLIENTS ({brands.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('all_videos')}
+            className={`px-4 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'all_videos'
                 ? 'bg-cinema-amber text-obsidian-950 shadow-md shadow-cinema-amber/20'
                 : 'text-neutral-400 hover:text-white glass-panel'
             }`}
           >
             <Film className="w-3.5 h-3.5" />
-            <span>PORTFOLIO REELS ({projects.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('brands')}
-            className={`px-4 py-2 rounded-xl font-mono text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeTab === 'brands'
-                ? 'bg-cinema-amber text-obsidian-950 shadow-md shadow-cinema-amber/20'
-                : 'text-neutral-400 hover:text-white glass-panel'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>BRANDS &amp; CREATORS ({brands.length})</span>
+            <span>ALL VIDEOS STREAM ({projects.length})</span>
           </button>
 
           <button
@@ -535,17 +514,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>BRAND &amp; PERSONALIZATION</span>
+            <span>PROFILE &amp; BRANDING</span>
           </button>
         </div>
 
-        {/* --- TAB 1: PROJECTS REELS --- */}
-        {activeTab === 'projects' && (
+        {/* --- TAB 1: TOPICWISE CATEGORIES & CLIENTS (PRIMARY) --- */}
+        {activeTab === 'categories' && (
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Quick-Connect Social/Video Reel Bar */}
+            {/* Quick-Connect Bar with Target Category Selector */}
             <form 
               onSubmit={handleQuickConnect}
-              className={`glass-panel p-3.5 sm:p-4 rounded-xl border mb-4 shadow-xl transition-all ${
+              className={`glass-panel p-3.5 sm:p-4 rounded-xl border mb-4 shadow-xl shrink-0 transition-all ${
                 connectProvider === 'instagram'
                   ? 'border-pink-500/30 bg-gradient-to-r from-pink-950/20 via-purple-950/20 to-transparent'
                   : 'border-red-500/30 bg-gradient-to-r from-red-950/20 via-black/40 to-transparent'
@@ -562,20 +541,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                   <div>
                     <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                      {connectProvider === 'instagram' ? 'CONNECT INSTAGRAM REEL' : 'CONNECT YOUTUBE VIDEO'}
-                      <span className="text-[10px] font-mono text-cinema-amber bg-cinema-amber/10 border border-cinema-amber/20 px-1.5 py-0.2 rounded font-normal">
-                        {connectProvider === 'instagram' ? '9:16 Vertical Reel' : 'Auto-Thumbnail'}
-                      </span>
+                      {connectProvider === 'instagram' ? 'QUICK-CONNECT INSTAGRAM REEL' : 'QUICK-CONNECT YOUTUBE VIDEO'}
                     </h3>
                     <p className="text-[11px] font-mono text-neutral-400">
-                      {connectProvider === 'instagram'
-                        ? 'Paste any Instagram Reel or Post link to embed into your portfolio'
-                        : 'Paste any YouTube, Shorts, or youtu.be link to connect instantly'}
+                      Paste a video or reel link and choose which client category it belongs to
                     </p>
                   </div>
                 </div>
 
-                {/* Provider switcher tabs */}
                 <div className="flex items-center gap-1.5 bg-black/60 p-1 rounded-lg border border-white/10 shrink-0 self-start sm:self-auto">
                   <button
                     type="button"
@@ -610,7 +583,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
+                {/* Category dropdown */}
+                <select
+                  value={quickMediaCategory}
+                  onChange={(e) => setQuickMediaCategory(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-black/80 border border-white/20 text-white text-xs font-mono focus:outline-none focus:border-cinema-amber shrink-0 md:w-60"
+                >
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id} className="bg-neutral-900">
+                      Target: {b.name}
+                    </option>
+                  ))}
+                </select>
+
                 <input
                   type="text"
                   value={quickMediaUrl}
@@ -618,7 +604,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     const val = e.target.value;
                     setQuickMediaUrl(val);
                     if (quickMediaError) setQuickMediaError('');
-                    // Auto-detect link and switch tab
                     if (parseInstagramId(val) && connectProvider !== 'instagram') {
                       setConnectProvider('instagram');
                     } else if (parseYouTubeId(val) && connectProvider !== 'youtube') {
@@ -632,6 +617,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }
                   className="flex-1 px-3.5 py-2 rounded-xl bg-black/70 border border-white/15 text-white text-xs font-mono focus:outline-none focus:border-cinema-amber transition-colors"
                 />
+
                 <button
                   type="submit"
                   className={`px-4 py-2 rounded-xl font-bold font-mono text-xs flex items-center justify-center gap-1.5 whitespace-nowrap transition-all shadow-md ${
@@ -641,136 +627,361 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   }`}
                 >
                   <Link2 className="w-3.5 h-3.5" />
-                  Connect {connectProvider === 'instagram' ? 'Reel' : 'Video'}
+                  Connect to Category
                 </button>
               </div>
             </form>
             {quickMediaError && (
-              <div className="text-xs font-mono text-red-400 -mt-2 mb-3 px-1">
+              <div className="text-xs font-mono text-red-400 -mt-2 mb-3 px-1 shrink-0">
                 {quickMediaError}
               </div>
             )}
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Total Items</span>
-                <div className="text-xl font-bold font-mono text-white mt-0.5">{projects.length}</div>
-              </div>
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Publicly Live</span>
-                <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
-                  {projects.filter(p => p.isPublished).length}
+            {/* Categories & their Videos Tree List */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {brands.length === 0 ? (
+                <div className="glass-panel p-8 text-center text-neutral-400 font-mono text-xs rounded-xl space-y-2">
+                  <p>No categories or clients configured yet.</p>
+                  <button
+                    onClick={() => {
+                      setEditingBrand(null);
+                      setIsBrandEditModalOpen(true);
+                    }}
+                    className="text-cinema-amber hover:underline text-xs"
+                  >
+                    Click here to add your first category (e.g. Alive Café)
+                  </button>
                 </div>
-              </div>
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Drafts</span>
-                <div className="text-xl font-bold font-mono text-neutral-400 mt-0.5">
-                  {projects.filter(p => !p.isPublished).length}
-                </div>
-              </div>
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Featured</span>
-                <div className="text-xl font-bold font-mono text-cinema-amber mt-0.5">
-                  {projects.filter(p => p.featured).length}
-                </div>
-              </div>
+              ) : (
+                brands.map((brandItem, bIdx) => {
+                  const categoryVideos = getVideosForCategory(brandItem);
+                  const isCollapsed = Boolean(collapsedCategories[brandItem.id]);
+
+                  return (
+                    <div
+                      key={brandItem.id}
+                      className="glass-panel rounded-2xl border border-white/10 overflow-hidden shadow-xl"
+                    >
+                      {/* Category Header */}
+                      <div className="p-4 sm:p-5 bg-gradient-to-r from-white/[0.03] to-transparent flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5">
+                        {/* Left: Logo & Category Info */}
+                        <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                          {/* Logo Emblem Box */}
+                          <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-black/80 border border-white/15 flex items-center justify-center p-1.5 shadow-md">
+                            {brandItem.logoUrl ? (
+                              <img
+                                src={brandItem.logoUrl}
+                                alt={brandItem.name}
+                                className="max-h-full max-w-full object-contain filter drop-shadow"
+                              />
+                            ) : (
+                              renderBrandIcon(brandItem.iconType)
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-base font-bold text-white truncate font-sans uppercase">
+                                {brandItem.name}
+                              </h4>
+                              {brandItem.badge && (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cinema-amber/15 text-cinema-amber border border-cinema-amber/30 font-bold uppercase">
+                                  {brandItem.badge}
+                                </span>
+                              )}
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-neutral-300 border border-white/10">
+                                {categoryVideos.length} {categoryVideos.length === 1 ? 'Video' : 'Videos'}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-neutral-400 mt-1 line-clamp-1 font-sans">
+                              {brandItem.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right: Controls & Actions on Category */}
+                        <div className="flex items-center gap-2 self-end md:self-center shrink-0 flex-wrap">
+                          {/* + Add Video to this Category */}
+                          <button
+                            onClick={() => {
+                              setTargetCategoryIdForNewVideo(brandItem.id);
+                              setEditingProject(null);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-cinema-amber/20 hover:bg-cinema-amber text-cinema-amber hover:text-obsidian-950 font-bold font-mono text-xs flex items-center gap-1.5 border border-cinema-amber/30 transition-all"
+                            title="Add a video to this client category"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Video</span>
+                          </button>
+
+                          {/* Reorder Category */}
+                          <div className="flex items-center bg-black/40 rounded-lg border border-white/10 p-0.5">
+                            <button
+                              disabled={bIdx === 0}
+                              onClick={() => handleMoveBrand(bIdx, 'up')}
+                              className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
+                              title="Move Category Up"
+                            >
+                              <ArrowUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              disabled={bIdx === brands.length - 1}
+                              onClick={() => handleMoveBrand(bIdx, 'down')}
+                              className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
+                              title="Move Category Down"
+                            >
+                              <ArrowDown className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          {/* Toggle Category Publish */}
+                          <button
+                            onClick={() => handleTogglePublishBrand(brandItem)}
+                            className={`p-1.5 rounded-lg text-xs font-mono border transition-colors ${
+                              brandItem.isPublished !== false
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : 'bg-neutral-800 text-neutral-400 border-white/10'
+                            }`}
+                            title={brandItem.isPublished !== false ? "Category live on site" : "Category hidden"}
+                          >
+                            {brandItem.isPublished !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Edit Category */}
+                          <button
+                            onClick={() => {
+                              setEditingBrand(brandItem);
+                              setIsBrandEditModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-200 border border-white/10 transition-colors"
+                            title="Edit Category Details (Logo, Description, Badge)"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete Category */}
+                          <button
+                            onClick={() => handleDeleteBrand(brandItem.id)}
+                            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 transition-colors"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Expand/Collapse Chevron */}
+                          <button
+                            onClick={() => toggleCategoryCollapse(brandItem.id)}
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                            title={isCollapsed ? "Expand Videos" : "Collapse Videos"}
+                          >
+                            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Inside the Category: Videos List */}
+                      {!isCollapsed && (
+                        <div className="p-3 sm:p-4 space-y-2.5 bg-black/30">
+                          {categoryVideos.length === 0 ? (
+                            <div className="p-4 rounded-xl border border-dashed border-white/10 text-center text-neutral-400 font-mono text-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                              <span>No videos in this category yet.</span>
+                              <button
+                                onClick={() => {
+                                  setTargetCategoryIdForNewVideo(brandItem.id);
+                                  setEditingProject(null);
+                                  setIsEditModalOpen(true);
+                                }}
+                                className="text-cinema-amber hover:underline flex items-center gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Add first video to {brandItem.name}
+                              </button>
+                            </div>
+                          ) : (
+                            categoryVideos.map((proj) => {
+                              const globalIndex = projects.findIndex(p => p.id === proj.id);
+
+                              return (
+                                <div
+                                  key={proj.id}
+                                  className="p-3 rounded-xl bg-black/60 border border-white/5 hover:border-white/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors"
+                                >
+                                  {/* Left: Thumbnail & Video Info */}
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="relative w-16 h-12 rounded-lg overflow-hidden shrink-0 bg-black border border-white/10">
+                                      <img
+                                        src={proj.posterUrl}
+                                        alt={proj.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <span className="absolute bottom-0.5 right-0.5 text-[8px] font-mono bg-black/90 px-1 rounded text-neutral-300">
+                                        {proj.runtime}
+                                      </span>
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="text-xs font-bold text-white truncate font-sans">
+                                          {proj.title}
+                                        </h5>
+                                        <span className="text-[9px] font-mono px-1 rounded bg-black/80 text-cinema-amber border border-cinema-amber/30 uppercase">
+                                          {proj.aspectRatio}
+                                        </span>
+                                        {proj.featured && (
+                                          <span className="text-[8px] font-mono px-1 rounded bg-cinema-amber/20 text-cinema-amber">
+                                            FEATURED
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
+                                        {proj.description || 'No description provided'}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Controls */}
+                                  <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                                    <div className="flex items-center bg-black/40 rounded border border-white/10 p-0.5">
+                                      <button
+                                        disabled={globalIndex <= 0}
+                                        onClick={() => handleMoveProject(globalIndex, 'up')}
+                                        className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
+                                        title="Move Up"
+                                      >
+                                        <ArrowUp className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        disabled={globalIndex >= projects.length - 1}
+                                        onClick={() => handleMoveProject(globalIndex, 'down')}
+                                        className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
+                                        title="Move Down"
+                                      >
+                                        <ArrowDown className="w-3 h-3" />
+                                      </button>
+                                    </div>
+
+                                    <button
+                                      onClick={() => handleTogglePublishProject(proj)}
+                                      className={`px-2 py-1 rounded text-[11px] font-mono flex items-center gap-1 border transition-colors ${
+                                        proj.isPublished
+                                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                          : 'bg-neutral-800 text-neutral-400 border-white/10'
+                                      }`}
+                                      title={proj.isPublished ? "Live on site" : "Draft (Hidden)"}
+                                    >
+                                      {proj.isPublished ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                      <span>{proj.isPublished ? "Live" : "Draft"}</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => {
+                                        setTargetCategoryIdForNewVideo(brandItem.id);
+                                        setEditingProject(proj);
+                                        setIsEditModalOpen(true);
+                                      }}
+                                      className="p-1.5 rounded bg-white/5 hover:bg-white/15 text-neutral-200 border border-white/10 transition-colors"
+                                      title="Edit Video"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleDeleteProject(proj.id)}
+                                      className="p-1.5 rounded bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 transition-colors"
+                                      title="Delete Video"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB 2: FLAT ALL VIDEOS ARCHIVE --- */}
+        {activeTab === 'all_videos' && (
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
+              <span className="text-xs font-mono text-neutral-400">
+                All {projects.length} videos across all categories
+              </span>
+              <button
+                onClick={() => {
+                  setTargetCategoryIdForNewVideo(brands[0]?.id || '');
+                  setEditingProject(null);
+                  setIsEditModalOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-cinema-amber text-obsidian-950 font-bold font-mono text-xs flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Video
+              </button>
             </div>
 
-            {/* Projects List */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {projects.map((proj, idx) => (
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              {projects.map((proj) => (
                 <div
                   key={proj.id}
-                  className="glass-panel p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/5 hover:border-white/15 transition-colors"
+                  className="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-white/5 hover:border-white/15"
                 >
-                  {/* Left: Thumbnail & Info */}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-black border border-white/10">
-                      <img
-                        src={proj.posterUrl}
-                        alt={proj.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute bottom-1 right-1 text-[9px] font-mono bg-black/80 px-1 rounded text-neutral-300">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="relative w-16 h-12 rounded-lg overflow-hidden shrink-0 bg-black border border-white/10">
+                      <img src={proj.posterUrl} alt={proj.title} className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0.5 right-0.5 text-[8px] font-mono bg-black/90 px-1 rounded text-neutral-300">
                         {proj.runtime}
                       </span>
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-white truncate font-sans">
+                        <h4 className="text-xs sm:text-sm font-bold text-white truncate font-sans">
                           {proj.title}
                         </h4>
-                        {proj.featured && (
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cinema-amber/20 text-cinema-amber border border-cinema-amber/30">
-                            FEATURED
-                          </span>
-                        )}
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cinema-amber/15 text-cinema-amber border border-cinema-amber/30">
+                          {proj.client || proj.category}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs font-mono text-neutral-400 mt-1">
-                        <span className="text-cinema-amber">{proj.category}</span>
-                        <span>•</span>
-                        <span>{proj.year}</span>
-                        {proj.client && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate text-neutral-300">{proj.client}</span>
-                          </>
-                        )}
-                      </div>
+                      <p className="text-xs text-neutral-400 line-clamp-1 mt-0.5">
+                        {proj.description || 'No description'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Right: Controls */}
-                  <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                    <div className="flex items-center bg-black/40 rounded-lg border border-white/10 p-0.5">
-                      <button
-                        disabled={idx === 0}
-                        onClick={() => handleMove(idx, 'up')}
-                        className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-30"
-                        title="Move Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        disabled={idx === projects.length - 1}
-                        onClick={() => handleMove(idx, 'down')}
-                        className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-30"
-                        title="Move Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <button
-                      onClick={() => handleTogglePublish(proj)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-colors ${
+                      onClick={() => handleTogglePublishProject(proj)}
+                      className={`px-2.5 py-1 rounded text-xs font-mono flex items-center gap-1 border ${
                         proj.isPublished
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                          : 'bg-neutral-800 text-neutral-400 border-white/10 hover:text-white'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : 'bg-neutral-800 text-neutral-400 border-white/10'
                       }`}
-                      title={proj.isPublished ? "Live on site" : "Draft (Hidden)"}
                     >
-                      {proj.isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                      <span>{proj.isPublished ? "Published" : "Draft"}</span>
+                      {proj.isPublished ? 'Published' : 'Draft'}
                     </button>
-
                     <button
                       onClick={() => {
                         setEditingProject(proj);
                         setIsEditModalOpen(true);
                       }}
-                      className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-200 hover:text-white transition-colors border border-white/10"
-                      title="Edit Project"
+                      className="p-1.5 rounded bg-white/5 hover:bg-white/15 text-neutral-200 border border-white/10"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-
                     <button
-                      onClick={() => handleDelete(proj.id)}
-                      className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 transition-colors"
-                      title="Delete Project"
+                      onClick={() => handleDeleteProject(proj.id)}
+                      className="p-1.5 rounded bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -781,376 +992,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* --- TAB 2: BRANDS & CREATORS DIRECTORY --- */}
-        {activeTab === 'brands' && (
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Top Prompt / Info Card */}
-            <div className="glass-panel p-3.5 sm:p-4 rounded-xl border border-white/10 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-cinema-amber/10 border border-cinema-amber/30 text-cinema-amber flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    COLLABORATIVE PARTNERS &amp; TOURNAMENT CLIENTS
-                  </h3>
-                  <p className="text-[11px] font-mono text-neutral-400">
-                    Upload transparent logos, configure client deliverables, and edit tournament details shown on your public site.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingBrand(null);
-                  setIsBrandEditModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cinema-amber/20 shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>ADD NEW BRAND</span>
-              </button>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Total Collaborators</span>
-                <div className="text-xl font-bold font-mono text-white mt-0.5">{brands.length}</div>
-              </div>
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Publicly Live</span>
-                <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
-                  {brands.filter(b => b.isPublished !== false).length}
-                </div>
-              </div>
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Drafts (Hidden)</span>
-                <div className="text-xl font-bold font-mono text-neutral-400 mt-0.5">
-                  {brands.filter(b => b.isPublished === false).length}
-                </div>
-              </div>
-              <div className="glass-panel-subtle p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-mono text-neutral-400 uppercase">Featured</span>
-                <div className="text-xl font-bold font-mono text-cinema-amber mt-0.5">
-                  {brands.filter(b => b.featured).length}
-                </div>
-              </div>
-            </div>
-
-            {/* Brands List */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {brands.length === 0 ? (
-                <div className="glass-panel p-8 text-center text-neutral-400 font-mono text-xs rounded-xl space-y-2">
-                  <p>No brands or creators recorded yet.</p>
-                  <button
-                    onClick={() => {
-                      setEditingBrand(null);
-                      setIsBrandEditModalOpen(true);
-                    }}
-                    className="text-cinema-amber hover:underline text-xs"
-                  >
-                    Click here to add your first brand or creator
-                  </button>
-                </div>
-              ) : (
-                brands.map((brandItem, idx) => (
-                  <div
-                    key={brandItem.id}
-                    className="glass-panel p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/5 hover:border-white/15 transition-colors"
-                  >
-                    {/* Left: Logo/Icon & Info */}
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-black/80 border border-white/10 flex items-center justify-center p-1.5">
-                        {brandItem.logoUrl ? (
-                          <img
-                            src={brandItem.logoUrl}
-                            alt={brandItem.name}
-                            className="max-h-full max-w-full object-contain filter drop-shadow"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 flex items-center justify-center">
-                            {renderBrandIcon(brandItem.iconType)}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm font-bold text-white truncate font-sans">
-                            {brandItem.name}
-                          </h4>
-                          {brandItem.badge && (
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-neutral-300 border border-white/10">
-                              {brandItem.badge}
-                            </span>
-                          )}
-                          {brandItem.featured && (
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cinema-amber/20 text-cinema-amber border border-cinema-amber/30">
-                              FEATURED
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs font-mono text-neutral-400 mt-1 flex-wrap">
-                          <span className="text-cinema-amber">{brandItem.category}</span>
-                          <span>•</span>
-                          <span className="text-neutral-300">Role: {brandItem.role}</span>
-                        </div>
-
-                        <p className="text-xs text-neutral-400 mt-1 line-clamp-1">
-                          {brandItem.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Right: Controls */}
-                    <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                      <div className="flex items-center bg-black/40 rounded-lg border border-white/10 p-0.5">
-                        <button
-                          disabled={idx === 0}
-                          onClick={() => handleMoveBrand(idx, 'up')}
-                          className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-30"
-                          title="Move Up"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled={idx === brands.length - 1}
-                          onClick={() => handleMoveBrand(idx, 'down')}
-                          className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-30"
-                          title="Move Down"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => handleTogglePublishBrand(brandItem)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition-colors ${
-                          brandItem.isPublished !== false
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                            : 'bg-neutral-800 text-neutral-400 border-white/10 hover:text-white'
-                        }`}
-                        title={brandItem.isPublished !== false ? "Live on site" : "Draft (Hidden)"}
-                      >
-                        {brandItem.isPublished !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                        <span>{brandItem.isPublished !== false ? "Published" : "Draft"}</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setEditingBrand(brandItem);
-                          setIsBrandEditModalOpen(true);
-                        }}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-200 hover:text-white transition-colors border border-white/10"
-                        title="Edit Brand / Creator"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteBrand(brandItem.id)}
-                        className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 transition-colors"
-                        title="Delete Brand / Creator"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* --- TAB 3: BRAND & PROFILE PERSONALIZATION --- */}
+        {/* --- TAB 3: PROFILE & PERSONALIZATION --- */}
         {activeTab === 'profile' && (
-          <div className="flex-1 overflow-y-auto pr-1">
+          <form onSubmit={handleSaveProfile} className="flex-1 overflow-y-auto space-y-5 pr-1">
             {profileSavedMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono flex items-center gap-2">
-                <Check className="w-3.5 h-3.5" />
-                <span>{profileSavedMsg}</span>
+              <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
+                {profileSavedMsg}
               </div>
             )}
 
-            <form onSubmit={handleSaveProfile} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-neutral-300 mb-1">
-                    CREATOR / STUDIO NAME *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                    placeholder="e.g. HARSHIT ADWANI"
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber font-sans font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-neutral-300 mb-1">
-                    PRIMARY PROFESSIONAL TITLE *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={profile.title}
-                    onChange={(e) => setProfile({ ...profile, title: e.target.value })}
-                    placeholder="e.g. Visual Artist"
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-neutral-300 mb-1">
-                    CONTACT EMAIL *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    placeholder="director@studio.com"
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-neutral-300 mb-1">
-                    BASE / LOCATION
-                  </label>
-                  <input
-                    type="text"
-                    value={profile.location}
-                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                    placeholder="e.g. Los Angeles / Worldwide"
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber font-mono"
-                  />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-mono text-neutral-300 mb-1">
-                  HERO TAGLINE
-                </label>
+                <label className="block text-xs font-mono text-neutral-300 mb-1">ARTIST NAME</label>
                 <input
                   type="text"
-                  value={profile.tagline}
-                  onChange={(e) => setProfile({ ...profile, tagline: e.target.value })}
-                  placeholder="Sculpting light, rhythm, and emotion into timeless visual narratives."
+                  value={profile.name}
+                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                   className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber"
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-mono text-neutral-300 mb-1">
-                  DIRECTOR DOSSIER BIO
-                </label>
-                <textarea
-                  rows={3}
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="Detailed biography visible inside the dossier modal..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber resize-none"
+                <label className="block text-xs font-mono text-neutral-300 mb-1">CREATIVE TITLE</label>
+                <input
+                  type="text"
+                  value={profile.title}
+                  onChange={(e) => setProfile({ ...profile, title: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber"
                 />
               </div>
+            </div>
 
-              {/* Headshot / Avatar Upload */}
-              <div className="glass-panel-subtle p-4 rounded-xl border border-white/10 space-y-3">
-                <label className="block text-xs font-mono text-cinema-amber font-semibold">
-                  PROFILE AVATAR / HEADSHOT
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-black border border-white/15 shrink-0">
-                    <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+            <div>
+              <label className="block text-xs font-mono text-neutral-300 mb-1">BIO / STATEMENT</label>
+              <textarea
+                rows={3}
+                value={profile.bio}
+                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-mono text-neutral-300 mb-1">LOCATION</label>
+                <input
+                  type="text"
+                  value={profile.location}
+                  onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-neutral-300 mb-1">CONTACT EMAIL</label>
+                <input
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber"
+                />
+              </div>
+            </div>
+
+            {/* Avatar upload */}
+            <div className="glass-panel p-4 rounded-xl border border-white/10 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {profile.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-white/20" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-neutral-400">
+                    <User className="w-6 h-6" />
                   </div>
-                  <input
-                    type="text"
-                    value={profile.avatarUrl}
-                    onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-xs font-mono"
-                    placeholder="Avatar image URL or upload local file"
-                  />
-                  <label className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono cursor-pointer flex items-center gap-2 border border-white/15 shrink-0">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Headshot</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={isAvatarUploading}
-                      onChange={handleAvatarUpload}
-                      className="hidden"
-                    />
-                  </label>
+                )}
+                <div>
+                  <h4 className="text-xs font-mono font-bold text-white uppercase">PROFILE AVATAR</h4>
+                  <p className="text-[11px] font-mono text-neutral-400">Upload your portrait photo</p>
                 </div>
               </div>
+              <label className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-mono text-xs cursor-pointer flex items-center gap-1.5 transition-colors border border-white/15">
+                <Upload className="w-3.5 h-3.5" />
+                <span>{isAvatarUploading ? 'Uploading...' : 'Upload Avatar'}</span>
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              </label>
+            </div>
 
-              {/* Brands & Tournament Showcase Visibility Switch */}
-              <div className="glass-panel-subtle p-4 rounded-xl border border-white/10 space-y-2">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <label className="block text-xs font-mono text-cinema-amber font-semibold uppercase">
-                      PORTFOLIO SECTIONS: BRANDS &amp; TOURNAMENT LOGOS
-                    </label>
-                    <p className="text-[11px] font-mono text-neutral-400 mt-0.5">
-                      Toggle the Picklefest Tournament Showcase, logo display, and Brands &amp; Creators section.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={isBrandsEnabled}
-                    onClick={() => handleToggleBrandsAndLogos(!isBrandsEnabled)}
-                    className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-cinema-amber ${
-                      isBrandsEnabled
-                        ? 'bg-cinema-amber border-cinema-amber shadow-md shadow-cinema-amber/30'
-                        : 'bg-neutral-800 border-neutral-700'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out mt-0.5 ${
-                        isBrandsEnabled ? 'translate-x-7 bg-obsidian-950' : 'translate-x-1 bg-neutral-400'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <div className="text-[10px] font-mono text-neutral-400">
-                  Current status: <strong className={isBrandsEnabled ? 'text-emerald-400' : 'text-neutral-300'}>{isBrandsEnabled ? 'Enabled (Full Brands & Picklefest Showcase Visible)' : 'Disabled (Website Returned to Previous Gallery Layout)'}</strong>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs transition-all shadow-lg shadow-cinema-amber/20"
-                >
-                  SAVE BRAND SETTINGS
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="pt-3">
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-cinema-amber hover:bg-amber-400 text-obsidian-950 font-bold font-mono text-xs flex items-center gap-2 shadow-lg shadow-cinema-amber/20 transition-all"
+              >
+                <Check className="w-4 h-4" />
+                <span>Save Profile Settings</span>
+              </button>
+            </div>
+          </form>
         )}
+
+        {/* Video Edit Modal */}
+        <VideoEditModal
+          project={editingProject}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleSaveProject}
+          brands={brands}
+          defaultCategoryId={targetCategoryIdForNewVideo}
+        />
+
+        {/* Category Edit Modal */}
+        <BrandEditModal
+          brand={editingBrand}
+          isOpen={isBrandEditModalOpen}
+          onClose={() => setIsBrandEditModalOpen(false)}
+          onSave={handleSaveBrand}
+        />
       </div>
-
-      {/* Add / Edit Video Modal */}
-      <VideoEditModal
-        project={editingProject}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleSaveProject}
-      />
-
-      {/* Add / Edit Brand & Creator Modal */}
-      <BrandEditModal
-        brand={editingBrand}
-        isOpen={isBrandEditModalOpen}
-        onClose={() => setIsBrandEditModalOpen(false)}
-        onSave={handleSaveBrand}
-      />
     </div>
   );
 };

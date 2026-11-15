@@ -81,6 +81,7 @@ class StorageService {
         title: project.title,
         slug: project.slug || project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
         category: project.category || 'Commercial',
+        categoryId: project.categoryId || '',
         client: project.client || '',
         year: project.year || new Date().getFullYear().toString(),
         runtime: project.runtime || '01:00',

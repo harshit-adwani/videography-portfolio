@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Camera, 
   ExternalLink, 
   Sliders, 
-  Tag, 
   X 
 } from 'lucide-react';
 import { VideoProject } from '../../types';
@@ -196,29 +194,6 @@ export const CinemaModal: React.FC<CinemaModalProps> = ({ project, isOpen, onClo
               <p className="text-sm text-neutral-300 leading-relaxed font-sans">
                 {project.description}
               </p>
-            </div>
-
-            {/* Technical Specifications */}
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
-                PRODUCTION SPECS &amp; RIG
-              </h4>
-              <div className="glass-panel-subtle rounded-xl p-4 border border-white/5 space-y-2.5 font-mono text-xs">
-                <div className="flex items-start gap-2">
-                  <Camera className="w-4 h-4 text-cinema-amber shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-neutral-400 block text-[10px]">CAMERA &amp; GLASS</span>
-                    <span className="text-neutral-200">{project.cameraGear}</span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 pt-1 border-t border-white/5">
-                  <Tag className="w-4 h-4 text-cinema-teal shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-neutral-400 block text-[10px]">POST &amp; COLOR SUITE</span>
-                    <span className="text-neutral-200">{project.editingSoftware}</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Roles */}

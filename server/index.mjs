@@ -163,6 +163,7 @@ app.post('/api/projects', (req, res) => {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)+/g, ''),
       category: projectData.category || 'Commercial',
+      categoryId: projectData.categoryId || '',
       client: projectData.client || '',
       year: projectData.year || new Date().getFullYear().toString(),
       runtime: projectData.runtime || '01:00',

@@ -117,42 +117,39 @@ export const GallerySection: React.FC<GallerySectionProps> = React.memo(({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 text-cinema-amber font-mono text-[11px] sm:text-xs uppercase tracking-widest mb-1.5 sm:mb-2">
             <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>TOPICWISE PORTFOLIO • {publishedBrands.length} CLIENTS &amp; EVENTS</span>
-            <span className="px-2 py-0.5 rounded-full bg-cinema-amber/10 border border-cinema-amber/30 text-[9px] sm:text-[10px] text-cinema-amber font-bold">
-              PORTFOLIO DIRECTORY
-            </span>
+            <span>PORTFOLIO</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-sans break-words">
-            SELECTED CLIENTS &amp; PRODUCTIONS
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-sans break-words uppercase">
+            HERE'S MY WORK
           </h2>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 sm:mt-2 max-w-2xl leading-relaxed">
-            Click on any client or event card below to open its dedicated video showcase. Browse tournament highlights, commercial ads, and social media reels.
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1.5 sm:mt-2 max-w-xl leading-relaxed">
+            Click on any client or event to view its video showcase, or switch to view all reels.
           </p>
         </div>
 
-        {/* View Switcher: Topics vs All Works */}
-        <div className="flex items-center gap-2 p-1 rounded-xl bg-black/60 border border-white/10 shrink-0 self-start md:self-end">
+        {/* View Switcher: Simplified */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/60 border border-white/10 shrink-0 self-start md:self-end">
           <button
             onClick={() => setViewMode('topics')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all ${
               viewMode === 'topics'
                 ? 'bg-cinema-amber text-obsidian-950 font-bold shadow-md shadow-cinema-amber/20'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
             <FolderGit2 className="w-3.5 h-3.5" />
-            <span>BY CLIENT &amp; TOPIC</span>
+            <span>By Client</span>
           </button>
           <button
             onClick={() => setViewMode('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all ${
               viewMode === 'all'
                 ? 'bg-cinema-amber text-obsidian-950 font-bold shadow-md shadow-cinema-amber/20'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span>ALL VIDEOS ({publishedProjects.length})</span>
+            <span>All Videos</span>
           </button>
         </div>
       </div>

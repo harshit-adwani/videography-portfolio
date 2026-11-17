@@ -37,13 +37,13 @@ export const HeroSection: React.FC<HeroSectionProps> = React.memo(({ scrollProgr
           </p>
           <div className="pt-2 flex flex-wrap gap-1">
             <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono text-neutral-300">
-              8K RAW
+              4K VIDEO
             </span>
             <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono text-neutral-300">
-              ANAMORPHIC
+              REELS &amp; ADS
             </span>
             <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono text-neutral-300">
-              ACES COLOR
+              CREATIVE EDITS
             </span>
           </div>
         </div>

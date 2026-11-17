@@ -260,7 +260,7 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Courtside high-velocity coverage, fast-turnaround vertical social reels, and promotional commercial ads for Rajasthan’s premier pickleball tournament."
+              placeholder="Courtside tournament coverage, vertical social reels, and promotional commercial ads for Rajasthan’s premier pickleball championship."
               className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white text-sm focus:outline-none focus:border-cinema-amber resize-none leading-relaxed"
             />
           </div>

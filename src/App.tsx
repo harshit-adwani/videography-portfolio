@@ -23,21 +23,21 @@ export const App: React.FC = () => {
     name: "HARSHIT ADWANI",
     title: "Visual Artist",
     tagline: "Find what you love and let it kill you",
-    bio: "19 year old visual artist based in jaipur working with Cameras and Editing Softwares to create visual experiences, Covering events, quick deliverables and a pinch of creativity",
+    bio: "19 year old visual artist based in Jaipur working with cameras and editing software to create visual experiences. Covering events, creative edits, and reels.",
     location: "Jaipur",
     avatarUrl: "",
     equipment: [
       {
-        category: "Camera Bodies & Capture",
-        items: ["Sony ZV-E10", "iPhone 15 Pro (ProRes Log)"]
+        category: "Cameras",
+        items: ["Sony ZV-E10", "iPhone 15 Pro"]
       },
       {
-        category: "Glass & Mobile Rig",
-        items: ["Sony E-Mount Lenses", "Gimbal & Handheld Rig"]
+        category: "Lens & Setup",
+        items: ["Sony 16-50mm Kit Lens", "Handheld Setup"]
       },
       {
-        category: "Focus & Delivery",
-        items: ["Event Coverage", "Quick Deliverables & Creative Edits"]
+        category: "Focus",
+        items: ["Event Coverage", "Creative Edits & Reels"]
       }
     ],
     software: [
@@ -51,8 +51,8 @@ export const App: React.FC = () => {
     stats: [
       { label: "Age", value: "19" },
       { label: "Based In", value: "Jaipur" },
-      { label: "Creative Focus", value: "Events & Reels" },
-      { label: "Workflow", value: "Fast Turnaround" }
+      { label: "Focus", value: "Events & Reels" },
+      { label: "Style", value: "Creative" }
     ],
     showBrandsAndLogos: true
   }));

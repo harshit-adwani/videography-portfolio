@@ -90,7 +90,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onC
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-white tracking-wider font-mono">
               <Camera className="w-4 h-4 text-cinema-amber" />
-              CINEMA GEAR LOCKER
+              GEAR & SETUP
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {profile.equipment.map((eq, i) => (
@@ -113,7 +113,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onC
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-white tracking-wider font-mono">
               <Clapperboard className="w-4 h-4 text-cinema-teal" />
-              EDITING & COLOR PIPELINE
+              EDITING & SOFTWARE
             </div>
             <div className="flex flex-wrap gap-2">
               {profile.software.map((sw, i) => (

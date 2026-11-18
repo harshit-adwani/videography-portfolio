@@ -1,6 +1,5 @@
-import { initialProfile, initialProjects } from '../data/initialProjects';
-import { initialBrands } from '../data/initialBrands';
 import { BrandCollaborator, UserProfile, VideoProject } from '../types';
+import { storage } from './storage';
 
 const API_BASE = '/api';
 
@@ -12,196 +11,167 @@ class ApiService {
   }
 
   // --- PROJECTS API ---
-  public async getProjects(): Promise<VideoProject[]> {
+  public async getProjects(includeDrafts = true): Promise<VideoProject[]> {
+    // If the user has made custom edits in this browser session/client,
+    // local storage is strictly authoritative so server static data never overwrites them.
+    if (storage.hasCustomEdits()) {
+      return storage.getProjects(includeDrafts);
+    }
+
     try {
       const res = await fetch(`${API_BASE}/projects`);
       if (res.ok) {
         const data = await res.json();
         this.isOnline = true;
-        // Also update local cache for instant offline fallback
-        localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(data));
-        return data;
+        if (Array.isArray(data) && data.length > 0) {
+          // Initialize local storage cache with server's initial data
+          localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(data));
+          return includeDrafts ? data : data.filter((p: VideoProject) => p.isPublished);
+        }
       }
     } catch (err) {
-      console.warn('[ApiService] Server unreachable, using local cache:', err);
+      console.warn('[ApiService] Server unreachable for projects, using local cache:', err);
       this.isOnline = false;
     }
 
-    // Fallback to localStorage or initial
-    try {
-      const local = localStorage.getItem('cine_portfolio_projects_v1');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      console.error(e);
-    }
-    return initialProjects;
+    return storage.getProjects(includeDrafts);
   }
 
   public async saveProject(project: Partial<VideoProject> & { title: string }): Promise<VideoProject> {
+    // 1. Synchronously persist to authoritative local store
+    const saved = storage.saveProject(project);
+
+    // 2. Best-effort write to backend server
     try {
       const res = await fetch(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(project),
+        body: JSON.stringify(saved),
       });
       if (res.ok) {
-        const saved = await res.json();
-        return saved;
+        this.isOnline = true;
       }
     } catch (err) {
-      console.warn('[ApiService] Server unreachable for save, fallback to local:', err);
+      console.warn('[ApiService] Server unreachable for saveProject:', err);
+      this.isOnline = false;
     }
 
-    // Local fallback
-    const local = localStorage.getItem('cine_portfolio_projects_v1');
-    const projects: VideoProject[] = local ? JSON.parse(local) : [...initialProjects];
-    const idx = projects.findIndex((p) => p.id === project.id);
-    let saved: VideoProject;
-    if (idx >= 0) {
-      saved = { ...projects[idx], ...project } as VideoProject;
-      projects[idx] = saved;
-    } else {
-      saved = {
-        ...project,
-        id: project.id || `proj-${Date.now()}`,
-        order: projects.length + 1,
-        createdAt: new Date().toISOString().split('T')[0],
-      } as VideoProject;
-      projects.push(saved);
-    }
-    localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(projects));
     return saved;
   }
 
   public async deleteProject(id: string): Promise<boolean> {
+    // 1. Synchronously delete from authoritative local store
+    const success = storage.deleteProject(id);
+
+    // 2. Best-effort delete from backend server
     try {
-      const res = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
-      if (res.ok) return true;
+      const res = await fetch(`${API_BASE}/projects/${id}?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        this.isOnline = true;
+      }
     } catch (err) {
-      console.warn('[ApiService] Server unreachable for delete, fallback to local:', err);
+      console.warn('[ApiService] Server unreachable for deleteProject:', err);
+      this.isOnline = false;
     }
 
-    const local = localStorage.getItem('cine_portfolio_projects_v1');
-    if (local) {
-      const projects: VideoProject[] = JSON.parse(local);
-      const filtered = projects.filter((p) => p.id !== id);
-      localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(filtered));
-      return true;
-    }
-    return false;
+    return success;
   }
 
   public async reorderProjects(orderedProjects: VideoProject[]): Promise<void> {
+    // 1. Synchronously reorder in authoritative local store
+    storage.reorderProjects(orderedProjects);
+
+    // 2. Best-effort reorder on backend server
     try {
-      await fetch(`${API_BASE}/projects/reorder`, {
+      await fetch(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedProjects }),
       });
     } catch (err) {
-      console.warn('[ApiService] Server unreachable for reorder:', err);
+      console.warn('[ApiService] Server unreachable for project reorder:', err);
     }
-    localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(orderedProjects));
   }
 
-  // --- BRANDS & CREATORS API ---
-  public async getBrands(): Promise<BrandCollaborator[]> {
+  // --- BRANDS & CATEGORIES API ---
+  public async getBrands(includeDrafts = true): Promise<BrandCollaborator[]> {
+    if (storage.hasCustomEdits()) {
+      return storage.getBrands(includeDrafts);
+    }
+
     try {
       const res = await fetch(`${API_BASE}/brands`);
       if (res.ok) {
         const data = await res.json();
+        this.isOnline = true;
         if (Array.isArray(data) && data.length > 0) {
           localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(data));
-          return data;
+          return includeDrafts ? data : data.filter((b: BrandCollaborator) => b.isPublished !== false);
         }
       }
     } catch (err) {
-      console.warn('[ApiService] Server unreachable for brands:', err);
+      console.warn('[ApiService] Server unreachable for brands, using local cache:', err);
+      this.isOnline = false;
     }
 
-    try {
-      const local = localStorage.getItem('cine_portfolio_brands_v1');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      console.error(e);
-    }
-    return initialBrands;
+    return storage.getBrands(includeDrafts);
   }
 
   public async saveBrand(brand: Partial<BrandCollaborator> & { name: string }): Promise<BrandCollaborator> {
+    // 1. Synchronously persist to authoritative local store
+    const saved = storage.saveBrand(brand);
+
+    // 2. Best-effort write to backend server
     try {
       const res = await fetch(`${API_BASE}/brands`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(brand),
+        body: JSON.stringify(saved),
       });
       if (res.ok) {
-        const saved = await res.json();
-        this.updateLocalBrand(saved);
-        return saved;
+        this.isOnline = true;
       }
     } catch (err) {
-      console.warn('[ApiService] Server unreachable for brand save, using local fallback:', err);
+      console.warn('[ApiService] Server unreachable for brand save:', err);
+      this.isOnline = false;
     }
 
-    return this.updateLocalBrand(brand);
-  }
-
-  private updateLocalBrand(brand: Partial<BrandCollaborator> & { name: string }): BrandCollaborator {
-    const local = localStorage.getItem('cine_portfolio_brands_v1');
-    const brands: BrandCollaborator[] = local ? JSON.parse(local) : [...initialBrands];
-    const idx = brands.findIndex((b) => b.id === brand.id);
-    let saved: BrandCollaborator;
-    if (idx >= 0) {
-      saved = { ...brands[idx], ...brand } as BrandCollaborator;
-      brands[idx] = saved;
-    } else {
-      saved = {
-        ...brand,
-        id: brand.id || `brand-${Date.now()}`,
-        category: brand.category || 'Brand Partner',
-        role: brand.role || 'Videographer & Editor',
-        badge: brand.badge || 'Collaborator',
-        description: brand.description || '',
-        deliverables: brand.deliverables || [],
-        isPublished: brand.isPublished ?? true,
-        order: brands.length + 1,
-        createdAt: new Date().toISOString().split('T')[0],
-      } as BrandCollaborator;
-      brands.push(saved);
-    }
-    localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(brands));
     return saved;
   }
 
   public async deleteBrand(id: string): Promise<boolean> {
+    // 1. Synchronously delete from authoritative local store
+    const success = storage.deleteBrand(id);
+
+    // 2. Best-effort delete from backend server
     try {
-      const res = await fetch(`${API_BASE}/brands/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/brands/${id}?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
       if (res.ok) {
-        this.deleteLocalBrand(id);
-        return true;
+        this.isOnline = true;
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for brand delete:', err);
+      this.isOnline = false;
     }
 
-    return this.deleteLocalBrand(id);
-  }
-
-  private deleteLocalBrand(id: string): boolean {
-    const local = localStorage.getItem('cine_portfolio_brands_v1');
-    if (local) {
-      const brands: BrandCollaborator[] = JSON.parse(local);
-      const filtered = brands.filter((b) => b.id !== id);
-      localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(filtered));
-      return true;
-    }
-    return false;
+    return success;
   }
 
   public async reorderBrands(orderedBrands: BrandCollaborator[]): Promise<void> {
+    // 1. Synchronously reorder in authoritative local store
+    storage.reorderBrands(orderedBrands);
+
+    // 2. Best-effort reorder on backend server
     try {
-      await fetch(`${API_BASE}/brands/reorder`, {
+      await fetch(`${API_BASE}/brands`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedBrands }),
@@ -209,7 +179,6 @@ class ApiService {
     } catch (err) {
       console.warn('[ApiService] Server unreachable for brand reorder:', err);
     }
-    localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(orderedBrands));
   }
 
   public async uploadBrandLogoFile(file: File): Promise<string> {
@@ -228,6 +197,10 @@ class ApiService {
 
   // --- PROFILE API ---
   public async getProfile(): Promise<UserProfile> {
+    if (storage.hasCustomEdits()) {
+      return storage.getProfile();
+    }
+
     try {
       const res = await fetch(`${API_BASE}/profile`);
       if (res.ok) {
@@ -238,19 +211,17 @@ class ApiService {
         }
       }
     } catch (err) {
-      console.warn('[ApiService] Server unreachable for profile:', err);
+      console.warn('[ApiService] Server unreachable for profile, using local cache:', err);
     }
 
-    try {
-      const local = localStorage.getItem('cine_portfolio_profile_v1');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      console.error(e);
-    }
-    return initialProfile;
+    return storage.getProfile();
   }
 
   public async saveProfile(profile: UserProfile): Promise<UserProfile> {
+    // 1. Synchronously persist to authoritative local store
+    storage.saveProfile(profile);
+
+    // 2. Best-effort write to backend server
     try {
       const res = await fetch(`${API_BASE}/profile`, {
         method: 'POST',
@@ -258,14 +229,12 @@ class ApiService {
         body: JSON.stringify(profile),
       });
       if (res.ok) {
-        const saved = await res.json();
-        localStorage.setItem('cine_portfolio_profile_v1', JSON.stringify(saved));
-        return saved;
+        this.isOnline = true;
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for profile save:', err);
     }
-    localStorage.setItem('cine_portfolio_profile_v1', JSON.stringify(profile));
+
     return profile;
   }
 

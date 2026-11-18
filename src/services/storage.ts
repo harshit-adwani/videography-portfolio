@@ -8,12 +8,26 @@ const STORAGE_KEYS = {
   PROFILE: 'cine_portfolio_profile_v1',
   ADMIN_AUTH: 'cine_portfolio_admin_auth',
   ADMIN_PASS: 'cine_portfolio_admin_pass',
+  CUSTOM_EDITS: 'cine_portfolio_has_custom_edits',
 };
 
 // Default admin passcode for demo (can be modified in settings)
 const DEFAULT_ADMIN_PASS = 'cinema2026';
 
 class StorageService {
+  // --- CUSTOM EDITS TRACKING ---
+  public hasCustomEdits(): boolean {
+    return localStorage.getItem(STORAGE_KEYS.CUSTOM_EDITS) === 'true';
+  }
+
+  public markCustomEdits(): void {
+    localStorage.setItem(STORAGE_KEYS.CUSTOM_EDITS, 'true');
+  }
+
+  public clearCustomEditsFlag(): void {
+    localStorage.removeItem(STORAGE_KEYS.CUSTOM_EDITS);
+  }
+
   // --- AUTHENTICATION ---
   public login(password: string): boolean {
     const savedPass = localStorage.getItem(STORAGE_KEYS.ADMIN_PASS) || DEFAULT_ADMIN_PASS;
@@ -60,6 +74,7 @@ class StorageService {
   }
 
   public saveProject(project: Partial<VideoProject> & { title: string }): VideoProject {
+    this.markCustomEdits();
     const current = this.getProjects(true);
     const existingIndex = current.findIndex(p => p.id === project.id);
 
@@ -107,6 +122,7 @@ class StorageService {
   }
 
   public deleteProject(id: string): boolean {
+    this.markCustomEdits();
     const current = this.getProjects(true);
     const filtered = current.filter(p => p.id !== id);
     localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(filtered));
@@ -114,17 +130,19 @@ class StorageService {
   }
 
   public reorderProjects(newOrder: VideoProject[]): void {
+    this.markCustomEdits();
     const reordered = newOrder.map((p, idx) => ({ ...p, order: idx + 1 }));
     localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(reordered));
   }
 
   public resetToDefaults(): void {
+    this.clearCustomEditsFlag();
     localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(initialProjects));
     localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(initialBrands));
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(initialProfile));
   }
 
-  // --- BRANDS & CREATORS ---
+  // --- BRANDS & CATEGORIES ---
   public getBrands(includeDrafts = false): BrandCollaborator[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.BRANDS);
@@ -142,6 +160,7 @@ class StorageService {
   }
 
   public saveBrand(brand: Partial<BrandCollaborator> & { name: string }): BrandCollaborator {
+    this.markCustomEdits();
     const current = this.getBrands(true);
     const existingIndex = current.findIndex(b => b.id === brand.id);
     let savedBrand: BrandCollaborator;
@@ -178,6 +197,7 @@ class StorageService {
   }
 
   public deleteBrand(id: string): boolean {
+    this.markCustomEdits();
     const current = this.getBrands(true);
     const filtered = current.filter(b => b.id !== id);
     localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(filtered));
@@ -185,6 +205,7 @@ class StorageService {
   }
 
   public reorderBrands(newOrder: BrandCollaborator[]): void {
+    this.markCustomEdits();
     const reordered = newOrder.map((b, idx) => ({ ...b, order: idx + 1 }));
     localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(reordered));
   }
@@ -205,7 +226,17 @@ class StorageService {
   }
 
   public saveProfile(profile: UserProfile): void {
+    this.markCustomEdits();
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
+  }
+
+  // --- BACKUP & EXPORT ---
+  public exportAllData(): { projects: VideoProject[]; brands: BrandCollaborator[]; profile: UserProfile } {
+    return {
+      projects: this.getProjects(true),
+      brands: this.getBrands(true),
+      profile: this.getProfile(),
+    };
   }
 }
 

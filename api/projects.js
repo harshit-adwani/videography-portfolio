@@ -12,20 +12,32 @@ export default function handler(req, res) {
 
   const filePath = path.join(process.cwd(), 'data', 'projects.json');
 
+  // Helper to load current file projects
+  const readProjects = () => {
+    try {
+      if (fs.existsSync(filePath)) {
+        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      }
+    } catch (e) {
+      console.warn('Could not read projects.json:', e);
+    }
+    return [];
+  };
+
   if (req.method === 'POST') {
     try {
       if (req.body) {
-        let current = [];
-        if (fs.existsSync(filePath)) {
-          current = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        }
-        if (req.body.orderedProjects) {
+        const current = readProjects();
+
+        // Check if reordering
+        if (req.body.orderedProjects && Array.isArray(req.body.orderedProjects)) {
           const reordered = req.body.orderedProjects.map((p, i) => ({ ...p, order: i + 1 }));
           try {
             fs.writeFileSync(filePath, JSON.stringify(reordered, null, 2), 'utf-8');
           } catch (_) {}
           return res.status(200).json(reordered);
         }
+
         const projectData = req.body;
         const idx = current.findIndex(p => p.id === projectData.id);
         let saved;
@@ -41,6 +53,7 @@ export default function handler(req, res) {
           };
           current.push(saved);
         }
+
         try {
           fs.writeFileSync(filePath, JSON.stringify(current, null, 2), 'utf-8');
         } catch (_) {}
@@ -51,14 +64,26 @@ export default function handler(req, res) {
     }
   }
 
-  try {
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      return res.status(200).json(JSON.parse(data));
+  if (req.method === 'DELETE') {
+    try {
+      const urlParts = (req.url || '').split('?')[0].split('/').filter(Boolean);
+      const urlId = urlParts.length > 2 && urlParts[urlParts.length - 1] !== 'projects' ? urlParts[urlParts.length - 1] : null;
+      const targetId = req.query?.id || (typeof req.body === 'object' && req.body?.id) || urlId;
+
+      if (targetId) {
+        const current = readProjects();
+        const filtered = current.filter(p => p.id !== targetId);
+        try {
+          fs.writeFileSync(filePath, JSON.stringify(filtered, null, 2), 'utf-8');
+        } catch (_) {}
+        return res.status(200).json({ success: true, id: targetId });
+      }
+    } catch (err) {
+      console.error('Error handling projects DELETE:', err);
     }
-  } catch (err) {
-    console.error('Error reading projects.json:', err);
   }
 
-  return res.status(200).json([]);
+  // GET
+  const projects = readProjects();
+  return res.status(200).json(projects);
 }

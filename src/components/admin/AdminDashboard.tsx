@@ -7,6 +7,7 @@ import {
   Check, 
   ChevronDown, 
   ChevronUp, 
+  Download,
   Eye, 
   EyeOff, 
   Film, 
@@ -94,9 +95,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [brands, quickMediaCategory]);
 
   const loadData = async () => {
-    const p = await api.getProjects();
+    const p = await api.getProjects(true);
     setProjects(p);
-    const b = await api.getBrands();
+    const b = await api.getBrands(true);
     setBrands(b);
     const prof = await api.getProfile();
     if (prof) setProfile(prof);
@@ -111,13 +112,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   if (!isOpen) return null;
 
   const refreshList = async () => {
-    const list = await api.getProjects();
+    const list = await api.getProjects(true);
     setProjects(list);
     onProjectsUpdated();
   };
 
   const refreshBrandsList = async () => {
-    const list = await api.getBrands();
+    const list = await api.getBrands(true);
     setBrands(list);
     if (onBrandsUpdated) onBrandsUpdated();
   };
@@ -240,41 +241,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleSaveProject = async (data: Partial<VideoProject> & { title: string }) => {
-    await api.saveProject(data);
+    const saved = await api.saveProject(data);
+    setProjects(prev => {
+      const idx = prev.findIndex(p => p.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [...prev, saved];
+    });
     refreshList();
   };
 
   const handleDeleteProject = async (id: string) => {
     if (confirm("Are you sure you want to delete this video reel?")) {
+      setProjects(prev => prev.filter(p => p.id !== id));
       await api.deleteProject(id);
       refreshList();
     }
   };
 
   const handleTogglePublishProject = async (project: VideoProject) => {
+    const nextPublished = !project.isPublished;
+    setProjects(prev => prev.map(p => p.id === project.id ? { ...p, isPublished: nextPublished } : p));
     await api.saveProject({
       ...project,
-      isPublished: !project.isPublished,
+      isPublished: nextPublished,
     });
     refreshList();
   };
 
   const handleSaveBrand = async (data: Partial<BrandCollaborator> & { name: string }) => {
-    await api.saveBrand(data);
+    const saved = await api.saveBrand(data);
+    setBrands(prev => {
+      const idx = prev.findIndex(b => b.id === saved.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = saved;
+        return copy;
+      }
+      return [...prev, saved];
+    });
     refreshBrandsList();
   };
 
   const handleDeleteBrand = async (id: string) => {
     if (confirm("Are you sure you want to remove this client category? The videos inside will remain saved.")) {
+      setBrands(prev => prev.filter(b => b.id !== id));
       await api.deleteBrand(id);
       refreshBrandsList();
     }
   };
 
   const handleTogglePublishBrand = async (brandItem: BrandCollaborator) => {
+    const nextPublished = brandItem.isPublished === false ? true : false;
+    setBrands(prev => prev.map(b => b.id === brandItem.id ? { ...b, isPublished: nextPublished } : b));
     await api.saveBrand({
       ...brandItem,
-      isPublished: brandItem.isPublished === false ? true : false,
+      isPublished: nextPublished,
     });
     refreshBrandsList();
   };
@@ -302,6 +327,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     next[index] = next[targetIndex];
     next[targetIndex] = temp;
 
+    setProjects(next);
     await api.reorderProjects(next);
     refreshList();
   };
@@ -311,8 +337,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       storage.resetToDefaults();
       refreshList();
       refreshBrandsList();
-      setProfile(storage.getProfile());
+      const defProf = storage.getProfile();
+      setProfile(defProf);
+      if (onProfileUpdated) onProfileUpdated(defProf);
     }
+  };
+
+  const handleExportData = () => {
+    const data = storage.exportAllData();
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `portfolio-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -426,6 +468,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <KeyRound className="w-3.5 h-3.5 text-cinema-amber" />
               Passcode
+            </button>
+
+            <button
+              onClick={handleExportData}
+              className="px-3 py-2 rounded-xl glass-panel hover:bg-white/10 text-cinema-teal hover:text-white font-mono text-xs flex items-center gap-1.5 transition-colors border border-white/10"
+              title="Download backup JSON with your projects, categories, and profile"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Backup
             </button>
 
             <button

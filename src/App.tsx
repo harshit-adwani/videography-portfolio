@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from './services/api';
+import { storage } from './services/storage';
 import { BrandCollaborator, UserProfile, VideoProject } from './types';
-import { initialProjects } from './data/initialProjects';
-import { initialBrands } from './data/initialBrands';
 import { ANIMATION_CONFIG } from './config/animationConfig';
 import { CameraCanvas } from './components/3d/CameraCanvas';
 import { ViewfinderHUD } from './components/3d/ViewfinderHUD';
@@ -19,46 +18,9 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { CinemaModal } from './components/gallery/CinemaModal';
 
 export const App: React.FC = () => {
-  const [profile, setProfile] = useState<UserProfile>(() => ({
-    name: "HARSHIT ADWANI",
-    title: "Visual Artist",
-    tagline: "Find what you love and let it kill you",
-    bio: "19 year old visual artist based in Jaipur working with cameras and editing software to create visual experiences. Covering events, creative edits, and reels.",
-    location: "Jaipur",
-    avatarUrl: "",
-    equipment: [
-      {
-        category: "Cameras",
-        items: ["Sony ZV-E10", "iPhone 15 Pro"]
-      },
-      {
-        category: "Lens & Setup",
-        items: ["Sony 16-50mm Kit Lens", "Handheld Setup"]
-      },
-      {
-        category: "Focus",
-        items: ["Event Coverage", "Creative Edits & Reels"]
-      }
-    ],
-    software: [
-      "Adobe Premiere Pro",
-      "Adobe After Effects"
-    ],
-    socials: [
-      { platform: "Instagram", url: "https://instagram.com/topper.mp4", handle: "@topper.mp4" }
-    ],
-    email: "harshitadwani2007@gmail.com",
-    stats: [
-      { label: "Age", value: "19" },
-      { label: "Based In", value: "Jaipur" },
-      { label: "Focus", value: "Events & Reels" },
-      { label: "Style", value: "Creative" }
-    ],
-    showBrandsAndLogos: true
-  }));
-
-  const [projects, setProjects] = useState<VideoProject[]>(() => initialProjects);
-  const [brands, setBrands] = useState<BrandCollaborator[]>(() => initialBrands);
+  const [profile, setProfile] = useState<UserProfile>(() => storage.getProfile());
+  const [projects, setProjects] = useState<VideoProject[]>(() => storage.getProjects(false));
+  const [brands, setBrands] = useState<BrandCollaborator[]>(() => storage.getBrands(false));
   const [activeProject, setActiveProject] = useState<VideoProject | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
@@ -71,9 +33,9 @@ export const App: React.FC = () => {
   // Load initial projects & profile from persistent backend
   useEffect(() => {
     const fetchData = async () => {
-      const p = await api.getProjects();
+      const p = await api.getProjects(false);
       setProjects(p);
-      const b = await api.getBrands();
+      const b = await api.getBrands(false);
       setBrands(b);
       const prof = await api.getProfile();
       setProfile(prof);
@@ -422,12 +384,12 @@ export const App: React.FC = () => {
   }, [gateState, updateGateState, resetScrollMomentum, restoreScrollMomentum]);
 
   const handleProjectsUpdated = async () => {
-    const updated = await api.getProjects();
+    const updated = await api.getProjects(false);
     setProjects(updated);
   };
 
   const handleBrandsUpdated = async () => {
-    const updated = await api.getBrands();
+    const updated = await api.getBrands(false);
     setBrands(updated);
   };
 

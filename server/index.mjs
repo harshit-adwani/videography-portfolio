@@ -128,6 +128,11 @@ app.get('/api/projects', (req, res) => {
 
 app.post('/api/projects', (req, res) => {
   const currentProjects = readJson(projectsFilePath, []);
+  if (req.body.orderedProjects && Array.isArray(req.body.orderedProjects)) {
+    const reordered = req.body.orderedProjects.map((p, idx) => ({ ...p, order: idx + 1 }));
+    writeJson(projectsFilePath, reordered);
+    return res.json(reordered);
+  }
   const projectData = req.body;
 
   if (!projectData.title) {
@@ -215,6 +220,11 @@ app.get('/api/brands', (req, res) => {
 
 app.post('/api/brands', (req, res) => {
   const currentBrands = readJson(brandsFilePath, []);
+  if (req.body.orderedBrands && Array.isArray(req.body.orderedBrands)) {
+    const reordered = req.body.orderedBrands.map((b, idx) => ({ ...b, order: idx + 1 }));
+    writeJson(brandsFilePath, reordered);
+    return res.json(reordered);
+  }
   const brandData = req.body;
 
   if (!brandData.name) {

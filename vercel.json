@@ -4,8 +4,24 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/projects/:path*",
+      "destination": "/api/projects"
+    },
+    {
       "source": "/api/projects",
       "destination": "/api/projects"
+    },
+    {
+      "source": "/api/brands/:path*",
+      "destination": "/api/brands"
+    },
+    {
+      "source": "/api/brands",
+      "destination": "/api/brands"
+    },
+    {
+      "source": "/api/profile/:path*",
+      "destination": "/api/profile"
     },
     {
       "source": "/api/profile",
@@ -13,6 +29,10 @@
     },
     {
       "source": "/api/auth/:path*",
+      "destination": "/api/auth"
+    },
+    {
+      "source": "/api/auth",
       "destination": "/api/auth"
     },
     {

@@ -53,6 +53,7 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
 
   // Upload state
   const [isLogoUploading, setIsLogoUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
         setIsPublished(true);
       }
       setIsLogoUploading(false);
+      setIsDragOver(false);
       setStatusMessage('');
       setNewDeliverable('');
     }
@@ -90,22 +92,49 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processLogoFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setStatusMessage('Please select a valid image file (PNG, JPG, SVG, WebP).');
+      return;
+    }
     try {
       setIsLogoUploading(true);
-      setStatusMessage('Uploading brand logo to disk...');
+      setStatusMessage('Processing & attaching brand logo...');
       const url = await api.uploadBrandLogoFile(file);
       setLogoUrl(url);
-      setStatusMessage('✓ Logo uploaded and saved!');
+      setStatusMessage('✓ Logo attached successfully!');
       setTimeout(() => setStatusMessage(''), 3000);
     } catch (err) {
       console.error(err);
-      setStatusMessage('Logo upload failed. You can also paste an image URL.');
+      setStatusMessage('Could not process logo. Please try another image or paste URL.');
     } finally {
       setIsLogoUploading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processLogoFile(file);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await processLogoFile(file);
     }
   };
 
@@ -277,9 +306,24 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              {/* Logo Preview Frame */}
-              <div className="relative w-28 h-20 rounded-xl bg-black/80 border border-white/15 flex items-center justify-center p-2 shrink-0 overflow-hidden shadow-inner">
-                {logoUrl ? (
+              {/* Logo Preview & Drag-Drop Target Frame */}
+              <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative w-28 h-20 rounded-xl bg-black/80 border flex items-center justify-center p-2 shrink-0 overflow-hidden shadow-inner transition-all ${
+                  isDragOver 
+                    ? 'border-cinema-amber border-dashed bg-cinema-amber/10 scale-105' 
+                    : 'border-white/15'
+                }`}
+                title="Drag & drop a logo image file here"
+              >
+                {isLogoUploading ? (
+                  <div className="flex flex-col items-center justify-center text-cinema-amber animate-pulse">
+                    <Upload className="w-5 h-5 animate-bounce mb-1" />
+                    <span className="text-[8px] font-mono">Attaching...</span>
+                  </div>
+                ) : logoUrl ? (
                   <img
                     src={logoUrl}
                     alt="Logo Preview"
@@ -300,14 +344,14 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
                   type="text"
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="Paste transparent logo URL (e.g. /brands/picklefest.png)"
+                  placeholder="Paste transparent logo URL (e.g. /brands/picklefest.png or https://...)"
                   className="w-full px-3.5 py-2 rounded-xl bg-black/60 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-cinema-amber"
                 />
 
-                <div className="flex items-center gap-2">
-                  <label className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-mono cursor-pointer flex items-center gap-1.5 border border-white/15 transition-colors">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="px-3.5 py-1.5 rounded-lg bg-cinema-amber/20 hover:bg-cinema-amber/30 text-cinema-amber text-xs font-mono cursor-pointer flex items-center gap-1.5 border border-cinema-amber/30 transition-colors">
                     <Upload className="w-3.5 h-3.5 text-cinema-amber" />
-                    <span>Upload Logo Image</span>
+                    <span>{isLogoUploading ? 'Attaching...' : 'Upload Logo Image'}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -321,11 +365,14 @@ export const BrandEditModal: React.FC<BrandEditModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setLogoUrl('')}
-                      className="text-xs font-mono text-neutral-400 hover:text-red-400 transition-colors"
+                      className="text-xs font-mono text-neutral-400 hover:text-red-400 transition-colors px-2 py-1"
                     >
-                      Clear Logo
+                      Remove Logo
                     </button>
                   )}
+                  <span className="text-[10px] font-mono text-neutral-500 hidden sm:inline">
+                    (or drag & drop file into the box)
+                  </span>
                 </div>
               </div>
             </div>

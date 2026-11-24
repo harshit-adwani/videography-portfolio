@@ -1,5 +1,6 @@
 import { BrandCollaborator, UserProfile, VideoProject } from '../types';
 import { storage } from './storage';
+import { fileToOptimizedDataUrl } from '../utils/imageUpload';
 
 const API_BASE = '/api';
 
@@ -182,17 +183,30 @@ class ApiService {
   }
 
   public async uploadBrandLogoFile(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('logo', file);
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
 
-    const res = await fetch(`${API_BASE}/upload/brand-logo`, {
-      method: 'POST',
-      body: formData,
-    });
+      const res = await fetch(`${API_BASE}/upload/brand-logo`, {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!res.ok) throw new Error('Logo upload failed');
-    const data = await res.json();
-    return data.url;
+      if (res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          if (data && data.url) return data.url;
+        } catch (_) {
+          // If response is not JSON (e.g. index.html SPA fallback on Vercel), continue to data URL fallback
+        }
+      }
+    } catch (err) {
+      console.warn('[ApiService] Server upload failed, using optimized Data URL fallback:', err);
+    }
+
+    // High-performance fallback: Convert image directly to optimized transparent Data URL
+    return fileToOptimizedDataUrl(file, 512, 512);
   }
 
   // --- PROFILE API ---
@@ -278,31 +292,51 @@ class ApiService {
   }
 
   public async uploadPosterFile(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('poster', file);
+    try {
+      const formData = new FormData();
+      formData.append('poster', file);
 
-    const res = await fetch(`${API_BASE}/upload/poster`, {
-      method: 'POST',
-      body: formData,
-    });
+      const res = await fetch(`${API_BASE}/upload/poster`, {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!res.ok) throw new Error('Poster upload failed');
-    const data = await res.json();
-    return data.url;
+      if (res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          if (data && data.url) return data.url;
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.warn('[ApiService] Server upload failed for poster, using data URL fallback:', err);
+    }
+
+    return fileToOptimizedDataUrl(file, 1280, 720, 0.85);
   }
 
   public async uploadAvatarFile(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('avatar', file);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
 
-    const res = await fetch(`${API_BASE}/upload/avatar`, {
-      method: 'POST',
-      body: formData,
-    });
+      const res = await fetch(`${API_BASE}/upload/avatar`, {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (!res.ok) throw new Error('Avatar upload failed');
-    const data = await res.json();
-    return data.url;
+      if (res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          if (data && data.url) return data.url;
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.warn('[ApiService] Server upload failed for avatar, using data URL fallback:', err);
+    }
+
+    return fileToOptimizedDataUrl(file, 400, 400, 0.9);
   }
 
   // --- AUTH ---

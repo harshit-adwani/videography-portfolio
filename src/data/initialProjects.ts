@@ -35,7 +35,8 @@ export const initialProfile: UserProfile = {
     { label: "Focus", value: "Events & Reels" },
     { label: "Style", value: "Creative" }
   ],
-  showBrandsAndLogos: true
+  showBrandsAndLogos: true,
+  showCameraHero: true
 };
 
 // High-quality projects and reels organized topicwise

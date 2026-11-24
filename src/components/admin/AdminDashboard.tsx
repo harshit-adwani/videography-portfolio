@@ -4,6 +4,7 @@ import {
   ArrowUp, 
   Award,
   Building2, 
+  Camera,
   Check, 
   ChevronDown, 
   ChevronUp, 
@@ -381,6 +382,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTimeout(() => setProfileSavedMsg(''), 3000);
   };
 
+  const handleToggleCameraHero = async () => {
+    const nextVal = profile.showCameraHero === false;
+    const updated: UserProfile = { ...profile, showCameraHero: nextVal };
+    setProfile(updated);
+    await api.saveProfile(updated);
+    if (onProfileUpdated) onProfileUpdated(updated);
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -460,6 +469,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Video className="w-3.5 h-3.5 text-cinema-amber" />
               ADD VIDEO
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleCameraHero}
+              className={`px-3 py-2 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-colors border ${
+                profile.showCameraHero !== false
+                  ? 'bg-cinema-amber/15 text-cinema-amber border-cinema-amber/30 hover:bg-cinema-amber/25'
+                  : 'bg-white/5 text-neutral-400 border-white/10 hover:text-white hover:bg-white/10'
+              }`}
+              title={profile.showCameraHero !== false ? "3D Camera Hero is ON (Click to remove)" : "3D Camera Hero is REMOVED (Click to restore)"}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Camera Hero: <strong className={profile.showCameraHero !== false ? 'text-cinema-amber' : 'text-neutral-300'}>{profile.showCameraHero !== false ? 'ON' : 'OFF'}</strong></span>
             </button>
 
             <button
@@ -1124,6 +1147,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>{isAvatarUploading ? 'Uploading...' : 'Upload Avatar'}</span>
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </label>
+            </div>
+
+            {/* 3D Camera Hero Screen Toggle */}
+            <div className="glass-panel p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-cinema-amber" />
+                  <h4 className="text-xs font-mono font-bold text-white uppercase">ORIGINAL 3D CAMERA HERO SCREEN</h4>
+                </div>
+                <p className="text-xs font-mono text-neutral-400 max-w-xl">
+                  {profile.showCameraHero !== false
+                    ? "Active: Website begins with the interactive 3D studio camera hero and zooms through the optical viewfinder."
+                    : "Removed: Website begins directly at the post-production timeline screen that appears after the camera."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleCameraHero}
+                className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold flex items-center justify-center gap-2 border transition-all shrink-0 ${
+                  profile.showCameraHero !== false
+                    ? 'bg-cinema-amber text-obsidian-950 border-cinema-amber shadow-lg shadow-cinema-amber/20 hover:bg-amber-400'
+                    : 'bg-white/10 text-neutral-300 border-white/15 hover:bg-white/15 hover:text-white'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>{profile.showCameraHero !== false ? 'CAMERA HERO: ON (CLICK TO REMOVE)' : 'CAMERA HERO: OFF (CLICK TO RESTORE)'}</span>
+              </button>
             </div>
 
             <div className="pt-3">

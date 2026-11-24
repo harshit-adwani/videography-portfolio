@@ -6,9 +6,10 @@ interface ProfileModalProps {
   profile: UserProfile;
   isOpen: boolean;
   onClose: () => void;
+  onOpenAdmin?: () => void;
 }
 
-export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onClose }) => {
+export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onClose, onOpenAdmin }) => {
   if (!isOpen) return null;
 
   return (
@@ -30,13 +31,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ profile, isOpen, onC
               ARTIST / CREATIVE DOSSIER
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
-            aria-label="Close dossier profile"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenAdmin && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAdmin();
+                }}
+                className="px-2.5 py-1 rounded-lg glass-panel hover:bg-white/10 text-[10px] font-mono text-neutral-400 hover:text-cinema-amber transition-colors border border-white/10"
+                title="Open Director Control Room"
+              >
+                Control Room
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+              aria-label="Close dossier profile"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Body */}

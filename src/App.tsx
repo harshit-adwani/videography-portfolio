@@ -43,6 +43,8 @@ export const App: React.FC = () => {
     fetchData();
   }, []);
 
+  const isCameraHeroActive = profile.showCameraHero !== false;
+
   // --- STEALTH ADMIN ACCESS TRIGGERS ---
   // 1. Direct URL Hash: http://localhost:5173/#admin or #/admin
   useEffect(() => {
@@ -80,6 +82,7 @@ export const App: React.FC = () => {
   type GateState = 'hero' | 'locked' | 'unlocked';
 
   const [gateState, setGateState] = useState<GateState>(() => {
+    if (!isCameraHeroActive) return 'unlocked';
     if (typeof window !== 'undefined') {
       const { minZoomDistance, maxZoomDistance, zoomDistanceFactor } = ANIMATION_CONFIG.timeline;
       const distance = Math.min(maxZoomDistance, Math.max(minZoomDistance, window.innerHeight * zoomDistanceFactor));
@@ -157,6 +160,17 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Sync state whenever camera hero is toggled on/off
+  useEffect(() => {
+    if (!isCameraHeroActive) {
+      updateGateState('unlocked');
+      restoreScrollMomentum();
+      scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+      setScrollProgress(BREAKTHROUGH_PROGRESS);
+      setIsWalkthroughActive(true);
+    }
+  }, [isCameraHeroActive, BREAKTHROUGH_PROGRESS, restoreScrollMomentum, updateGateState]);
+
   // Ensure body overflow is restored on unmount
   useEffect(() => {
     return () => {
@@ -168,6 +182,8 @@ export const App: React.FC = () => {
   const rafIdRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!isCameraHeroActive) return;
+
     const handleResize = () => {
       const distance = computeZoomDistance();
       setZoomDistance(distance);
@@ -252,11 +268,11 @@ export const App: React.FC = () => {
         rafIdRef.current = null;
       }
     };
-  }, [BREAKTHROUGH_PROGRESS, computeZoomDistance, updateGateState, resetScrollMomentum, restoreScrollMomentum]);
+  }, [isCameraHeroActive, BREAKTHROUGH_PROGRESS, computeZoomDistance, updateGateState, resetScrollMomentum, restoreScrollMomentum]);
 
   // --- SCROLL GATE INERTIA INTERCEPTOR & EVENT BLOCKER ---
   useEffect(() => {
-    if (!ANIMATION_CONFIG.gate.enabled || gateState === 'unlocked') return;
+    if (!isCameraHeroActive || !ANIMATION_CONFIG.gate.enabled || gateState === 'unlocked') return;
 
     // 1. Wheel event interceptor (mouse wheel & trackpad momentum)
     const handleWheel = (e: WheelEvent) => {
@@ -381,7 +397,7 @@ export const App: React.FC = () => {
         clearTimeout(idleTimerRef.current);
       }
     };
-  }, [gateState, updateGateState, resetScrollMomentum, restoreScrollMomentum]);
+  }, [isCameraHeroActive, gateState, updateGateState, resetScrollMomentum, restoreScrollMomentum]);
 
   const handleProjectsUpdated = async () => {
     const updated = await api.getProjects(false);
@@ -413,17 +429,19 @@ export const App: React.FC = () => {
   // Smooth scroll helpers
   const handleScrollToGallery = () => {
     restoreScrollMomentum();
-    canUnlockRef.current = true;
-    updateGateState('unlocked');
-    scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-    setScrollProgress(BREAKTHROUGH_PROGRESS);
-    setIsWalkthroughActive(true);
+    if (isCameraHeroActive) {
+      canUnlockRef.current = true;
+      updateGateState('unlocked');
+      scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+      setScrollProgress(BREAKTHROUGH_PROGRESS);
+      setIsWalkthroughActive(true);
+    }
     const el = document.getElementById('gallery');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     } else {
       window.scrollTo({
-        top: transitionOffset + window.innerHeight,
+        top: isCameraHeroActive ? transitionOffset + window.innerHeight : 0,
         behavior: 'smooth',
       });
     }
@@ -431,11 +449,13 @@ export const App: React.FC = () => {
 
   const handleScrollToContact = () => {
     restoreScrollMomentum();
-    canUnlockRef.current = true;
-    updateGateState('unlocked');
-    scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-    setScrollProgress(BREAKTHROUGH_PROGRESS);
-    setIsWalkthroughActive(true);
+    if (isCameraHeroActive) {
+      canUnlockRef.current = true;
+      updateGateState('unlocked');
+      scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+      setScrollProgress(BREAKTHROUGH_PROGRESS);
+      setIsWalkthroughActive(true);
+    }
     const el = document.getElementById('contact');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -444,11 +464,13 @@ export const App: React.FC = () => {
 
   const handleScrollToBrands = () => {
     restoreScrollMomentum();
-    canUnlockRef.current = true;
-    updateGateState('unlocked');
-    scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-    setScrollProgress(BREAKTHROUGH_PROGRESS);
-    setIsWalkthroughActive(true);
+    if (isCameraHeroActive) {
+      canUnlockRef.current = true;
+      updateGateState('unlocked');
+      scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+      setScrollProgress(BREAKTHROUGH_PROGRESS);
+      setIsWalkthroughActive(true);
+    }
     const el = document.getElementById('brands');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -457,8 +479,10 @@ export const App: React.FC = () => {
 
   const handleScrollToTop = () => {
     restoreScrollMomentum();
-    canUnlockRef.current = false;
-    updateGateState('hero');
+    if (isCameraHeroActive) {
+      canUnlockRef.current = false;
+      updateGateState('hero');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -468,47 +492,61 @@ export const App: React.FC = () => {
       const hash = window.location.hash;
       if (hash === '#gallery') {
         restoreScrollMomentum();
-        canUnlockRef.current = true;
-        updateGateState('unlocked');
-        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-        setScrollProgress(BREAKTHROUGH_PROGRESS);
-        setIsWalkthroughActive(true);
+        if (isCameraHeroActive) {
+          canUnlockRef.current = true;
+          updateGateState('unlocked');
+          scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+          setScrollProgress(BREAKTHROUGH_PROGRESS);
+          setIsWalkthroughActive(true);
+        }
         const el = document.getElementById('gallery');
         if (el) el.scrollIntoView({ behavior: 'instant' });
       } else if (hash === '#picklefest') {
         restoreScrollMomentum();
-        canUnlockRef.current = true;
-        updateGateState('unlocked');
-        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-        setScrollProgress(BREAKTHROUGH_PROGRESS);
-        setIsWalkthroughActive(true);
+        if (isCameraHeroActive) {
+          canUnlockRef.current = true;
+          updateGateState('unlocked');
+          scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+          setScrollProgress(BREAKTHROUGH_PROGRESS);
+          setIsWalkthroughActive(true);
+        }
         const el = document.getElementById('picklefest') || document.getElementById('gallery');
         if (el) el.scrollIntoView({ behavior: 'instant' });
       } else if (hash === '#brands') {
         restoreScrollMomentum();
-        canUnlockRef.current = true;
-        updateGateState('unlocked');
-        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-        setScrollProgress(BREAKTHROUGH_PROGRESS);
-        setIsWalkthroughActive(true);
+        if (isCameraHeroActive) {
+          canUnlockRef.current = true;
+          updateGateState('unlocked');
+          scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+          setScrollProgress(BREAKTHROUGH_PROGRESS);
+          setIsWalkthroughActive(true);
+        }
         const el = document.getElementById('brands') || document.getElementById('gallery');
         if (el) el.scrollIntoView({ behavior: 'instant' });
       } else if (hash === '#contact') {
         restoreScrollMomentum();
-        canUnlockRef.current = true;
-        updateGateState('unlocked');
-        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-        setScrollProgress(BREAKTHROUGH_PROGRESS);
-        setIsWalkthroughActive(true);
+        if (isCameraHeroActive) {
+          canUnlockRef.current = true;
+          updateGateState('unlocked');
+          scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+          setScrollProgress(BREAKTHROUGH_PROGRESS);
+          setIsWalkthroughActive(true);
+        }
         const el = document.getElementById('contact');
         if (el) el.scrollIntoView({ behavior: 'instant' });
       } else if (hash === '#intro-timeline') {
         restoreScrollMomentum();
-        updateGateState('locked');
-        scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
-        setScrollProgress(BREAKTHROUGH_PROGRESS);
-        setIsWalkthroughActive(true);
-        window.scrollTo({ top: transitionOffsetRef.current, behavior: 'instant' });
+        if (isCameraHeroActive) {
+          updateGateState('locked');
+          scrollProgressRef.current = BREAKTHROUGH_PROGRESS;
+          setScrollProgress(BREAKTHROUGH_PROGRESS);
+          setIsWalkthroughActive(true);
+          window.scrollTo({ top: transitionOffsetRef.current, behavior: 'instant' });
+        } else {
+          const el = document.getElementById('intro-timeline');
+          if (el) el.scrollIntoView({ behavior: 'instant' });
+          else window.scrollTo({ top: 0, behavior: 'instant' });
+        }
       }
     };
     const t = setTimeout(handleHashNav, 200);
@@ -517,10 +555,11 @@ export const App: React.FC = () => {
       clearTimeout(t);
       window.removeEventListener('hashchange', handleHashNav);
     };
-  }, [BREAKTHROUGH_PROGRESS, restoreScrollMomentum, updateGateState]);
+  }, [BREAKTHROUGH_PROGRESS, isCameraHeroActive, restoreScrollMomentum, updateGateState]);
 
   // Walkthrough phases active once camera zoom completes
   const [isWalkthroughActive, setIsWalkthroughActive] = useState(() => {
+    if (!isCameraHeroActive) return true;
     if (typeof window !== 'undefined') {
       const { minZoomDistance, maxZoomDistance, zoomDistanceFactor } = ANIMATION_CONFIG.timeline;
       const distance = Math.min(maxZoomDistance, Math.max(minZoomDistance, window.innerHeight * zoomDistanceFactor));
@@ -531,13 +570,17 @@ export const App: React.FC = () => {
   });
 
   useEffect(() => {
+    if (!isCameraHeroActive) {
+      if (!isWalkthroughActive) setIsWalkthroughActive(true);
+      return;
+    }
     const isPast = scrollProgress >= BREAKTHROUGH_PROGRESS || (typeof window !== 'undefined' && window.scrollY >= transitionOffset);
     if (isPast && !isWalkthroughActive) {
       setIsWalkthroughActive(true);
     } else if (!isPast && isWalkthroughActive) {
       setIsWalkthroughActive(false);
     }
-  }, [scrollProgress, isWalkthroughActive, BREAKTHROUGH_PROGRESS, transitionOffset]);
+  }, [scrollProgress, isWalkthroughActive, BREAKTHROUGH_PROGRESS, transitionOffset, isCameraHeroActive]);
 
   // Background spotlight fade: light studio during camera phase, deep dark obsidian when in walkthrough
   const studioBackdropOpacity = Math.max(0, 1 - scrollProgress * ANIMATION_CONFIG.studioBackdrop.fadeSpeed);
@@ -545,29 +588,37 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-obsidian-950 text-neutral-100 flex flex-col relative selection:bg-cinema-amber/30 selection:text-white w-full max-w-full overflow-x-clip">
       {/* --- 1. LIGHT STUDIO SPOTLIGHT BACKDROP --- */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-200"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 46%, #3a4055 0%, #222634 45%, #13151e 75%, #08080c 100%)',
-          opacity: studioBackdropOpacity,
-        }}
-      />
+      {isCameraHeroActive && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-200"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 46%, #3a4055 0%, #222634 45%, #13151e 75%, #08080c 100%)',
+            opacity: studioBackdropOpacity,
+          }}
+        />
+      )}
 
       {/* --- 2. 3D CAMERA VIEWPORT (z-0) --- */}
       {/* Continuous zoom while rotating, deep preview screen zoom, vanishes at breakthrough */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <CameraCanvas scrollProgress={scrollProgress} />
-      </div>
+      {isCameraHeroActive && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <CameraCanvas scrollProgress={scrollProgress} />
+        </div>
+      )}
 
       {/* --- 3. OPTICAL SHUTTER FLASH & IRIS TRANSITION (z-40) --- */}
-      <ViewfinderTransition progress={scrollProgress} />
+      {isCameraHeroActive && (
+        <ViewfinderTransition progress={scrollProgress} />
+      )}
 
       {/* --- 4. VIEWFINDER HUD (z-30) --- */}
-      <ViewfinderHUD 
-        progress={scrollProgress} 
-        isGalleryActive={isWalkthroughActive} 
-        onOpenAdmin={handleOpenAdmin}
-      />
+      {isCameraHeroActive && (
+        <ViewfinderHUD 
+          progress={scrollProgress} 
+          isGalleryActive={isWalkthroughActive} 
+          onOpenAdmin={handleOpenAdmin}
+        />
+      )}
 
       {/* --- 5. TOP FIXED NAVIGATION & PROFILE TRIGGER (z-50) --- */}
       <ProfileTrigger
@@ -584,21 +635,23 @@ export const App: React.FC = () => {
 
       {/* --- 6. ACT 1: HERO SCROLL TRACK (Sized to match transitionOffset) --- */}
       {/* Provides clean uninterrupted scroll distance for camera rotation and viewfinder zoom */}
-      <div 
-        className="relative w-full pointer-events-none"
-        style={{ height: `${transitionOffset}px` }}
-      >
-        <HeroSection
-          scrollProgress={scrollProgress}
-          onScrollToGallery={handleScrollToGallery}
-          profile={profile}
-        />
-      </div>
+      {isCameraHeroActive && (
+        <div 
+          className="relative w-full pointer-events-none"
+          style={{ height: `${transitionOffset}px` }}
+        >
+          <HeroSection
+            scrollProgress={scrollProgress}
+            onScrollToGallery={handleScrollToGallery}
+            profile={profile}
+          />
+        </div>
+      )}
 
       {/* --- 7. THE CREATIVE DIRECTOR WALKTHROUGH (Acts 2, 3 & 4) --- */}
       <main 
         className={`relative z-10 flex-1 flex flex-col transition-opacity w-full max-w-full min-w-0 ${
-          isWalkthroughActive ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          (!isCameraHeroActive || isWalkthroughActive) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         style={{ transitionDuration: `${ANIMATION_CONFIG.gallery.mainFadeDurationMs}ms` }}
       >
@@ -606,7 +659,7 @@ export const App: React.FC = () => {
         <TimelineIntroSection
           profile={profile}
           onScrollToWorks={handleScrollToGallery}
-          isLocked={gateState === 'locked'}
+          isLocked={isCameraHeroActive && gateState === 'locked'}
         />
 
         {/* ACT 3: THE WORKS (Portfolio Video Gallery) */}
@@ -614,7 +667,7 @@ export const App: React.FC = () => {
           projects={projects} 
           brands={brands}
           onSelectProject={setActiveProject} 
-          isViewfinderActive={isWalkthroughActive} 
+          isViewfinderActive={!isCameraHeroActive || isWalkthroughActive} 
           showBrandsAndLogos={profile.showBrandsAndLogos !== false}
         />
 
@@ -630,6 +683,7 @@ export const App: React.FC = () => {
         profile={profile}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       <AdminLoginModal

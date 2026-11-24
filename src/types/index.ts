@@ -63,6 +63,7 @@ export interface UserProfile {
     value: string;
   }[];
   showBrandsAndLogos?: boolean;
+  showCameraHero?: boolean;
 }
 
 export type BrandIconType = 

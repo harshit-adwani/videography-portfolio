@@ -58,5 +58,6 @@
       "value": "Creative"
     }
   ],
-  "showBrandsAndLogos": true
+  "showBrandsAndLogos": true,
+  "showCameraHero": true
 }

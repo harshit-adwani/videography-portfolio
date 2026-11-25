@@ -6,26 +6,75 @@ const API_BASE = '/api';
 
 class ApiService {
   private isOnline = true;
+  private storageMode: 'redis' | 'static' | 'unknown' = 'unknown';
 
   public getIsOnline(): boolean {
     return this.isOnline;
   }
 
+  public getStorageMode(): 'redis' | 'static' | 'unknown' {
+    return this.storageMode;
+  }
+
+  private updateStorageMode(res: Response): void {
+    const mode = res.headers.get('X-Storage-Mode');
+    if (mode === 'redis' || mode === 'static') {
+      this.storageMode = mode;
+    }
+  }
+
+  public async syncLocalToCloud(): Promise<boolean> {
+    try {
+      const localProjects = storage.getProjects(true);
+      const localBrands = storage.getBrands(true);
+      const localProfile = storage.getProfile();
+
+      const [pRes, bRes, profRes] = await Promise.all([
+        fetch(`${API_BASE}/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ syncAll: localProjects }),
+        }),
+        fetch(`${API_BASE}/brands`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ syncAll: localBrands }),
+        }),
+        fetch(`${API_BASE}/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(localProfile),
+        }),
+      ]);
+
+      if (pRes.ok && bRes.ok && profRes.ok) {
+        this.updateStorageMode(pRes);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('[ApiService] Failed to sync local edits to cloud:', err);
+    }
+    return false;
+  }
+
   // --- PROJECTS API ---
   public async getProjects(includeDrafts = true): Promise<VideoProject[]> {
-    // If the user has made custom edits in this browser session/client,
-    // local storage is strictly authoritative so server static data never overwrites them.
-    if (storage.hasCustomEdits()) {
-      return storage.getProjects(includeDrafts);
-    }
-
     try {
-      const res = await fetch(`${API_BASE}/projects`);
+      const res = await fetch(`${API_BASE}/projects`, { cache: 'no-store' });
       if (res.ok) {
+        this.updateStorageMode(res);
         const data = await res.json();
         this.isOnline = true;
-        if (Array.isArray(data) && data.length > 0) {
-          // Initialize local storage cache with server's initial data
+        if (this.storageMode === 'redis' && !storage.hasCustomEdits()) {
+          if (Array.isArray(data) && data.length > 0) {
+            localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(data));
+            const sorted = data.sort((a: VideoProject, b: VideoProject) => (a.order ?? 0) - (b.order ?? 0));
+            return includeDrafts ? sorted : sorted.filter((p: VideoProject) => p.isPublished);
+          }
+        } else if (!storage.hasCustomEdits() && Array.isArray(data) && data.length > 0) {
           localStorage.setItem('cine_portfolio_projects_v1', JSON.stringify(data));
           return includeDrafts ? data : data.filter((p: VideoProject) => p.isPublished);
         }
@@ -39,10 +88,10 @@ class ApiService {
   }
 
   public async saveProject(project: Partial<VideoProject> & { title: string }): Promise<VideoProject> {
-    // 1. Synchronously persist to authoritative local store
+    // 1. Synchronously persist to local store
     const saved = storage.saveProject(project);
 
-    // 2. Best-effort write to backend server
+    // 2. Write to backend server (Redis / local file)
     try {
       const res = await fetch(`${API_BASE}/projects`, {
         method: 'POST',
@@ -51,6 +100,10 @@ class ApiService {
       });
       if (res.ok) {
         this.isOnline = true;
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for saveProject:', err);
@@ -61,10 +114,10 @@ class ApiService {
   }
 
   public async deleteProject(id: string): Promise<boolean> {
-    // 1. Synchronously delete from authoritative local store
+    // 1. Synchronously delete from local store
     const success = storage.deleteProject(id);
 
-    // 2. Best-effort delete from backend server
+    // 2. Delete from backend server
     try {
       const res = await fetch(`${API_BASE}/projects/${id}?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -73,6 +126,10 @@ class ApiService {
       });
       if (res.ok) {
         this.isOnline = true;
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for deleteProject:', err);
@@ -83,16 +140,22 @@ class ApiService {
   }
 
   public async reorderProjects(orderedProjects: VideoProject[]): Promise<void> {
-    // 1. Synchronously reorder in authoritative local store
+    // 1. Synchronously reorder in local store
     storage.reorderProjects(orderedProjects);
 
-    // 2. Best-effort reorder on backend server
+    // 2. Reorder on backend server
     try {
-      await fetch(`${API_BASE}/projects`, {
+      const res = await fetch(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedProjects }),
       });
+      if (res.ok) {
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
+      }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for project reorder:', err);
     }
@@ -100,16 +163,19 @@ class ApiService {
 
   // --- BRANDS & CATEGORIES API ---
   public async getBrands(includeDrafts = true): Promise<BrandCollaborator[]> {
-    if (storage.hasCustomEdits()) {
-      return storage.getBrands(includeDrafts);
-    }
-
     try {
-      const res = await fetch(`${API_BASE}/brands`);
+      const res = await fetch(`${API_BASE}/brands`, { cache: 'no-store' });
       if (res.ok) {
+        this.updateStorageMode(res);
         const data = await res.json();
         this.isOnline = true;
-        if (Array.isArray(data) && data.length > 0) {
+        if (this.storageMode === 'redis' && !storage.hasCustomEdits()) {
+          if (Array.isArray(data) && data.length > 0) {
+            localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(data));
+            const sorted = data.sort((a: BrandCollaborator, b: BrandCollaborator) => (a.order ?? 0) - (b.order ?? 0));
+            return includeDrafts ? sorted : sorted.filter((b: BrandCollaborator) => b.isPublished !== false);
+          }
+        } else if (!storage.hasCustomEdits() && Array.isArray(data) && data.length > 0) {
           localStorage.setItem('cine_portfolio_brands_v1', JSON.stringify(data));
           return includeDrafts ? data : data.filter((b: BrandCollaborator) => b.isPublished !== false);
         }
@@ -123,10 +189,10 @@ class ApiService {
   }
 
   public async saveBrand(brand: Partial<BrandCollaborator> & { name: string }): Promise<BrandCollaborator> {
-    // 1. Synchronously persist to authoritative local store
+    // 1. Synchronously persist to local store
     const saved = storage.saveBrand(brand);
 
-    // 2. Best-effort write to backend server
+    // 2. Write to backend server
     try {
       const res = await fetch(`${API_BASE}/brands`, {
         method: 'POST',
@@ -135,6 +201,10 @@ class ApiService {
       });
       if (res.ok) {
         this.isOnline = true;
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for brand save:', err);
@@ -145,10 +215,10 @@ class ApiService {
   }
 
   public async deleteBrand(id: string): Promise<boolean> {
-    // 1. Synchronously delete from authoritative local store
+    // 1. Synchronously delete from local store
     const success = storage.deleteBrand(id);
 
-    // 2. Best-effort delete from backend server
+    // 2. Delete from backend server
     try {
       const res = await fetch(`${API_BASE}/brands/${id}?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -157,6 +227,10 @@ class ApiService {
       });
       if (res.ok) {
         this.isOnline = true;
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for brand delete:', err);
@@ -167,16 +241,22 @@ class ApiService {
   }
 
   public async reorderBrands(orderedBrands: BrandCollaborator[]): Promise<void> {
-    // 1. Synchronously reorder in authoritative local store
+    // 1. Synchronously reorder in local store
     storage.reorderBrands(orderedBrands);
 
-    // 2. Best-effort reorder on backend server
+    // 2. Reorder on backend server
     try {
-      await fetch(`${API_BASE}/brands`, {
+      const res = await fetch(`${API_BASE}/brands`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedBrands }),
       });
+      if (res.ok) {
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
+      }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for brand reorder:', err);
     }
@@ -211,15 +291,12 @@ class ApiService {
 
   // --- PROFILE API ---
   public async getProfile(): Promise<UserProfile> {
-    if (storage.hasCustomEdits()) {
-      return storage.getProfile();
-    }
-
     try {
-      const res = await fetch(`${API_BASE}/profile`);
+      const res = await fetch(`${API_BASE}/profile`, { cache: 'no-store' });
       if (res.ok) {
+        this.updateStorageMode(res);
         const data = await res.json();
-        if (data && data.name) {
+        if (data && data.name && !storage.hasCustomEdits()) {
           localStorage.setItem('cine_portfolio_profile_v1', JSON.stringify(data));
           return data;
         }
@@ -232,10 +309,10 @@ class ApiService {
   }
 
   public async saveProfile(profile: UserProfile): Promise<UserProfile> {
-    // 1. Synchronously persist to authoritative local store
+    // 1. Synchronously persist to local store
     storage.saveProfile(profile);
 
-    // 2. Best-effort write to backend server
+    // 2. Write to backend server
     try {
       const res = await fetch(`${API_BASE}/profile`, {
         method: 'POST',
@@ -244,6 +321,10 @@ class ApiService {
       });
       if (res.ok) {
         this.isOnline = true;
+        this.updateStorageMode(res);
+        if (this.storageMode === 'redis') {
+          storage.clearCustomEditsFlag();
+        }
       }
     } catch (err) {
       console.warn('[ApiService] Server unreachable for profile save:', err);

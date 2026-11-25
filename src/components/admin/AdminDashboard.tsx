@@ -8,6 +8,8 @@ import {
   Check, 
   ChevronDown, 
   ChevronUp, 
+  Cloud,
+  CloudOff,
   Download,
   Eye, 
   EyeOff, 
@@ -72,6 +74,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newPass, setNewPass] = useState('');
   const [passMessage, setPassMessage] = useState('');
 
+  // Cloud Sync State
+  const [storageMode, setStorageMode] = useState<'redis' | 'static' | 'unknown'>(() => api.getStorageMode());
+  const [hasLocalEdits, setHasLocalEdits] = useState<boolean>(() => storage.hasCustomEdits());
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const [cloudSyncMsg, setCloudSyncMsg] = useState('');
+
   // Profile Form State
   const [profile, setProfile] = useState<UserProfile>(() => initialProfileProp || storage.getProfile());
   const [profileSavedMsg, setProfileSavedMsg] = useState('');
@@ -102,6 +110,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setBrands(b);
     const prof = await api.getProfile();
     if (prof) setProfile(prof);
+    setStorageMode(api.getStorageMode());
+    setHasLocalEdits(storage.hasCustomEdits());
+  };
+
+  const handleSyncToCloud = async () => {
+    setIsSyncingCloud(true);
+    setCloudSyncMsg('');
+    const ok = await api.syncLocalToCloud();
+    setIsSyncingCloud(false);
+    setStorageMode(api.getStorageMode());
+    setHasLocalEdits(storage.hasCustomEdits());
+    if (ok) {
+      setCloudSyncMsg('✓ Synced to Cloud!');
+      refreshList();
+      refreshBrandsList();
+      setTimeout(() => setCloudSyncMsg(''), 3000);
+    } else {
+      setCloudSyncMsg('Connect Upstash Redis on Vercel first');
+      setTimeout(() => setCloudSyncMsg(''), 4000);
+    }
   };
 
   useEffect(() => {
@@ -484,6 +512,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Camera className="w-3.5 h-3.5" />
               <span>Camera Hero: <strong className={profile.showCameraHero !== false ? 'text-cinema-amber' : 'text-neutral-300'}>{profile.showCameraHero !== false ? 'ON' : 'OFF'}</strong></span>
             </button>
+
+            {storageMode === 'redis' ? (
+              hasLocalEdits ? (
+                <button
+                  type="button"
+                  onClick={handleSyncToCloud}
+                  disabled={isSyncingCloud}
+                  className="px-3 py-2 rounded-xl bg-cinema-teal/20 hover:bg-cinema-teal/30 text-cinema-teal border border-cinema-teal/40 font-mono text-xs flex items-center gap-1.5 transition-colors animate-pulse"
+                  title="You have local edits from before Cloud Sync was enabled. Click to push them to all devices."
+                >
+                  <Cloud className="w-3.5 h-3.5" />
+                  <span>{isSyncingCloud ? 'Syncing...' : 'Push Local Edits to Cloud'}</span>
+                </button>
+              ) : (
+                <span
+                  className="px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 font-mono text-xs flex items-center gap-1.5"
+                  title="Changes are saved to Upstash Redis and sync across all devices"
+                >
+                  <Cloud className="w-3.5 h-3.5" />
+                  <span>{cloudSyncMsg || 'Cloud Sync ON'}</span>
+                </span>
+              )
+            ) : (
+              <span
+                className="px-3 py-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/25 font-mono text-xs flex items-center gap-1.5"
+                title="Add Upstash Redis in Vercel Storage to sync changes across all devices"
+              >
+                <CloudOff className="w-3.5 h-3.5" />
+                <span>Local Mode</span>
+              </span>
+            )}
 
             <button
               onClick={() => setShowPasscodeChange(!showPasscodeChange)}

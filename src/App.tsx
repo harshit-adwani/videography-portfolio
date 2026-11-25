@@ -180,11 +180,22 @@ export const App: React.FC = () => {
 
   // Track global scroll smoothly with requestAnimationFrame throttle
   const rafIdRef = useRef<number | null>(null);
+  const lastWidthRef = useRef<number>(typeof window !== 'undefined' ? window.innerWidth : 0);
 
   useEffect(() => {
     if (!isCameraHeroActive) return;
 
     const handleResize = () => {
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768 && window.matchMedia('(pointer: fine)').matches;
+      const currentWidth = window.innerWidth;
+
+      // On mobile smartphones, ignore vertical-only resizes caused by address bar collapsing/expanding.
+      // Only recompute zoom distance on desktop or genuine mobile orientation changes (width change >= 50px).
+      if (!isDesktop && Math.abs(currentWidth - lastWidthRef.current) < 50) {
+        return;
+      }
+      lastWidthRef.current = currentWidth;
+
       const distance = computeZoomDistance();
       setZoomDistance(distance);
       zoomDistanceRef.current = distance;
@@ -199,9 +210,10 @@ export const App: React.FC = () => {
         const scrollY = window.scrollY;
         const distance = zoomDistanceRef.current;
         const currentTransitionOffset = transitionOffsetRef.current;
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768 && window.matchMedia('(pointer: fine)').matches;
 
-        // Gate monitoring during scroll
-        if (ANIMATION_CONFIG.gate.enabled) {
+        // Desktop gate monitoring during scroll
+        if (isDesktop && ANIMATION_CONFIG.gate.enabled) {
           // Breakthrough reached from hero track: Trigger resetScrollMomentum event!
           if (gateStateRef.current === 'hero' && scrollY >= currentTransitionOffset) {
             resetScrollMomentum(currentTransitionOffset);
@@ -249,7 +261,8 @@ export const App: React.FC = () => {
           }
         } else {
           const progress = Math.max(0, Math.min(1, scrollY / distance));
-          if (Math.abs(scrollProgressRef.current - progress) > 0.001) {
+          const threshold = isDesktop ? 0.001 : 0.004;
+          if (Math.abs(scrollProgressRef.current - progress) > threshold) {
             scrollProgressRef.current = progress;
             setScrollProgress(progress);
           }
@@ -273,6 +286,11 @@ export const App: React.FC = () => {
   // --- SCROLL GATE INERTIA INTERCEPTOR & EVENT BLOCKER ---
   useEffect(() => {
     if (!isCameraHeroActive || !ANIMATION_CONFIG.gate.enabled || gateState === 'unlocked') return;
+
+    // Gate interception is reserved strictly for desktop mouse wheel and keyboard navigation.
+    // On smartphones/mobile touch devices, bypass touch-jacking completely so the browser retains 60/120fps native compositor momentum.
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768 && window.matchMedia('(pointer: fine)').matches;
+    if (!isDesktop) return;
 
     // 1. Wheel event interceptor (mouse wheel & trackpad momentum)
     const handleWheel = (e: WheelEvent) => {
@@ -575,12 +593,15 @@ export const App: React.FC = () => {
       return;
     }
     const isPast = scrollProgress >= BREAKTHROUGH_PROGRESS || (typeof window !== 'undefined' && window.scrollY >= transitionOffset);
+    const rearmOffset = Math.ceil(zoomDistance * ANIMATION_CONFIG.timeline.rearmProgress);
+    const isWayBefore = scrollProgress < ANIMATION_CONFIG.timeline.rearmProgress && (typeof window !== 'undefined' && window.scrollY < rearmOffset);
+
     if (isPast && !isWalkthroughActive) {
       setIsWalkthroughActive(true);
-    } else if (!isPast && isWalkthroughActive) {
+    } else if (isWayBefore && isWalkthroughActive) {
       setIsWalkthroughActive(false);
     }
-  }, [scrollProgress, isWalkthroughActive, BREAKTHROUGH_PROGRESS, transitionOffset, isCameraHeroActive]);
+  }, [scrollProgress, isWalkthroughActive, BREAKTHROUGH_PROGRESS, transitionOffset, zoomDistance, isCameraHeroActive]);
 
   // Background spotlight fade: light studio during camera phase, deep dark obsidian when in walkthrough
   const studioBackdropOpacity = Math.max(0, 1 - scrollProgress * ANIMATION_CONFIG.studioBackdrop.fadeSpeed);

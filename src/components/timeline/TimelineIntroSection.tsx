@@ -16,7 +16,7 @@ export const TimelineIntroSection: React.FC<TimelineIntroSectionProps> = React.m
   return (
     <section 
       id="intro-timeline"
-      className="relative min-h-[calc(100dvh-3rem)] sm:min-h-screen w-full flex flex-col justify-between sm:justify-center items-center px-4 sm:px-8 safe-section-pt pb-8 sm:py-20 overflow-hidden bg-obsidian-950 scroll-mt-20 sm:scroll-mt-24"
+      className="relative min-h-[calc(100svh-3rem)] sm:min-h-screen w-full flex flex-col justify-between sm:justify-center items-center px-4 sm:px-8 safe-section-pt pb-8 sm:py-20 overflow-hidden bg-obsidian-950 scroll-mt-20 sm:scroll-mt-24"
     >
       {/* Background Subtle Grid & Horizon Glow */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_40%,rgba(245,158,11,0.06)_0%,rgba(0,0,0,0)_70%)]" />

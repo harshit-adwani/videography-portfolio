@@ -13,7 +13,7 @@ export const MasterpieceOutroSection: React.FC<MasterpieceOutroSectionProps> = R
   return (
     <section 
       id="contact" 
-      className="relative min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 sm:px-8 md:px-12 safe-section-pt safe-outro-pb bg-obsidian-950 scroll-mt-20 sm:scroll-mt-24"
+      className="relative min-h-[100svh] sm:min-h-screen w-full flex flex-col justify-center items-center px-4 sm:px-8 md:px-12 safe-section-pt safe-outro-pb bg-obsidian-950 scroll-mt-20 sm:scroll-mt-24"
     >
       {/* Background Cinematic Spotlight & Glow */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_45%,rgba(245,158,11,0.08)_0%,rgba(0,0,0,0)_65%)]" />
